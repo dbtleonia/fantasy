@@ -13,10 +13,14 @@ func main() {
 		log.Fatalf("Usage: %s <projections-csv>", os.Args[0])
 	}
 	const (
-		colID     = 0
-		colName   = 2
-		colPos    = 3
-		colPoints = 8
+		colID      = 0
+		colName    = 2
+		colPos     = 3
+		colTeam    = 4
+		colVOR     = 7
+		colPoints  = 8
+		colRank    = 11
+		colPosRank = 12
 	)
 	f, err := os.Open(os.Args[1])
 	if err != nil {
@@ -41,7 +45,11 @@ func main() {
 			record[colID],
 			record[colName],
 			record[colPos],
+			record[colTeam],
+			record[colVOR],
 			record[colPoints],
+			record[colRank],
+			record[colPosRank],
 		})
 	}
 	out.Flush()

@@ -9,11 +9,15 @@ import (
 )
 
 type Player struct {
-	Pick   int // 0 if undrafted
-	ID     int
-	Name   string
-	Pos    string // QB RB WR TE K DST
-	Points float64
+	Pick    int // 0 if undrafted
+	ID      int
+	Name    string
+	Team    string
+	VOR     float64
+	Pos     string // QB RB WR TE K DST
+	Points  float64
+	Rank    int
+	PosRank int
 }
 
 type ByPick []*Player
@@ -23,16 +27,20 @@ func (x ByPick) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 func (x ByPick) Less(i, j int) bool { return x[i].Pick < x[j].Pick }
 
 func (p *Player) String() string {
-	return fmt.Sprintf("%3d %07d %3s %8.4f %s", p.Pick, p.ID, p.Pos, p.Points, p.Name)
+	return fmt.Sprintf("%3d %07d %3d %3s %3d %8.4f %8.4f %-3s %s", p.Pick, p.ID, p.Rank, p.Pos, p.PosRank, p.Points, p.VOR, p.Team, p.Name)
 }
 
 func ReadPlayers(filename string) ([]*Player, error) {
 	const (
-		colPick   = 0
-		colID     = 1
-		colName   = 2
-		colPos    = 3
-		colPoints = 4
+		colPick    = 0
+		colID      = 1
+		colName    = 2
+		colPos     = 3
+		colTeam    = 4
+		colVOR     = 5
+		colPoints  = 6
+		colRank    = 7
+		colPosRank = 8
 	)
 	f, err := os.Open(filename)
 	if err != nil {
@@ -56,16 +64,32 @@ func ReadPlayers(filename string) ([]*Player, error) {
 		if err != nil {
 			return nil, err
 		}
+		vor, err := strconv.ParseFloat(record[colVOR], 64)
+		if err != nil {
+			return nil, err
+		}
 		points, err := strconv.ParseFloat(record[colPoints], 64)
 		if err != nil {
 			return nil, err
 		}
+		rank, err := strconv.Atoi(record[colRank])
+		if err != nil {
+			return nil, err
+		}
+		posRank, err := strconv.Atoi(record[colPosRank])
+		if err != nil {
+			return nil, err
+		}
 		players = append(players, &Player{
-			Pick:   pick,
-			ID:     id,
-			Name:   record[colName],
-			Pos:    record[colPos],
-			Points: points,
+			Pick:    pick,
+			ID:      id,
+			Name:    record[colName],
+			Team:    record[colTeam],
+			VOR:     vor,
+			Pos:     record[colPos],
+			Points:  points,
+			Rank:    rank,
+			PosRank: posRank,
 		})
 	}
 	return players, nil
