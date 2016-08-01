@@ -1,12 +1,15 @@
 package fantasy
 
 import (
+	"fmt"
 	"math/rand"
 	"sort"
+	"strings"
 )
 
 type Strategy interface {
-	Select(state *State, order []int) int
+	// TODO: Return player ID instead of rank.
+	Select(state *State, order []int) (rank int, justification string)
 }
 
 type Autopick struct {
@@ -17,16 +20,21 @@ func NewAutopick(rules *Rules) *Autopick {
 	return &Autopick{rules}
 }
 
-func (a *Autopick) Select(state *State, order []int) int {
+func (a *Autopick) Select(state *State, order []int) (int, string) {
 	i := order[state.Pick]
 	team := state.Teams[i]
 	allowedPos := a.rules.AutopickMap[team.PosString()]
 	for j, player := range state.Undrafted {
 		if allowedPos[player.Pos[0]] {
-			return j
+			var justification []string
+			for p, _ := range allowedPos {
+				justification = append(justification, string(p))
+			}
+			sort.Strings(justification)
+			return j, strings.Join(justification, "")
 		}
 	}
-	return 0
+	return 0, ""
 }
 
 type Humanoid struct {
@@ -38,20 +46,21 @@ func NewHumanoid(rules *Rules, lambda float64) *Humanoid {
 	return &Humanoid{rules, lambda}
 }
 
-func (h *Humanoid) Select(state *State, order []int) int {
+func (h *Humanoid) Select(state *State, order []int) (int, string) {
 	i := order[state.Pick]
 	team := state.Teams[i]
 	allowedPos := h.rules.HumanoidMap[team.PosString()]
 	r := int(rand.ExpFloat64() / h.lambda)
+	justification := fmt.Sprintf("reached %d", r)
 	for j, player := range state.Undrafted {
 		if allowedPos[player.Pos[0]] {
 			r--
 		}
 		if r < 0 {
-			return j
+			return j, justification
 		}
 	}
-	return 0
+	return 0, ""
 }
 
 type Optimize struct {
@@ -101,7 +110,7 @@ func (o *Optimize) Candidates(state *State, order []int) []*Candidate {
 		for trial := 0; trial < o.numTrials; trial++ {
 			undrafted := clonePlayers(state.Undrafted)
 			teams := cloneTeams(state.Teams)
-			teams[i].Add(player, state.Pick)
+			teams[i].Add(player, state.Pick, "")
 			RunDraft(&State{teams, undrafted, state.Pick + 1}, order, o.strategies)
 			points += o.scorer.Score(teams[i])
 		}
@@ -111,7 +120,14 @@ func (o *Optimize) Candidates(state *State, order []int) []*Candidate {
 	return result
 }
 
-func (o *Optimize) Select(state *State, order []int) int {
-	c := o.Candidates(state, order)
-	return c[len(c)-1].Index
+func (o *Optimize) Select(state *State, order []int) (int, string) {
+	candidates := o.Candidates(state, order)
+
+	var justification []string
+	for _, c := range candidates {
+		player := state.Undrafted[c.Index]
+		justification = append(justification, fmt.Sprintf("%c%02d=%d", player.Pos[0], player.PosRank, int(c.Value)))
+	}
+
+	return candidates[len(candidates)-1].Index, strings.Join(justification, " ")
 }

@@ -11,7 +11,7 @@ type Team struct {
 }
 
 // Add copies a player onto the team, setting its pick field.
-func (t *Team) Add(player *Player, pick int) {
+func (t *Team) Add(player *Player, pick int, justification string) {
 	if player.Pick != 0 {
 		log.Fatalf("Add player with Pick != 0: %s", player)
 	}
@@ -22,6 +22,7 @@ func (t *Team) Add(player *Player, pick int) {
 	}
 	playerCopy := *player
 	playerCopy.Pick = pick
+	playerCopy.Justification = justification
 	// https://github.com/golang/go/wiki/SliceTricks
 	t.players = append(t.players, nil)
 	copy(t.players[i+1:], t.players[i:])

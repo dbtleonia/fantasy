@@ -35,7 +35,7 @@ func ReadState(playersCsv string, numTeams int, order []int) (*State, error) {
 			break
 		}
 		i := order[pick]
-		teams[i].Add(player, pick)
+		teams[i].Add(player, pick, "")
 		pick++
 	}
 

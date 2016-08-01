@@ -9,7 +9,9 @@ import (
 )
 
 type Player struct {
-	Pick    int // 0 if undrafted
+	Pick          int    // 0 if undrafted
+	Justification string // "" if undrafted
+
 	ID      int
 	Name    string
 	Team    string
@@ -27,7 +29,8 @@ func (x ByPick) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 func (x ByPick) Less(i, j int) bool { return x[i].Pick < x[j].Pick }
 
 func (p *Player) String() string {
-	return fmt.Sprintf("%3d %07d %3d %3s %3d %8.4f %8.4f %-3s %s", p.Pick, p.ID, p.Rank, p.Pos, p.PosRank, p.Points, p.VOR, p.Team, p.Name)
+	// TODO: Don't hardcode %-25s.
+	return fmt.Sprintf("%3d %07d %3d %3s %3d %8.4f %8.4f %-3s %-25s # %s", p.Pick, p.ID, p.Rank, p.Pos, p.PosRank, p.Points, p.VOR, p.Team, p.Name, p.Justification)
 }
 
 func ReadPlayers(filename string) ([]*Player, error) {
