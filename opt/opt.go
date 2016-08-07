@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"math/rand"
@@ -11,17 +12,24 @@ import (
 	"github.com/dbtleonia/fantasy"
 )
 
+var (
+	lambda = flag.Float64("lambda", 0.36, "rate parameter for humanoid")
+)
+
 func main() {
-	if len(os.Args) != 6 {
-		log.Fatalf("Usage: %s <order-csv> <players-csv> <rules-csv> <schema> <num-teams>", os.Args[0])
+	flag.Parse()
+	if flag.NArg() != 5 {
+		fmt.Fprintf(os.Stderr, "Usage: %s [<flags>] <order-csv> <players-csv> <rules-csv> <schema> <num-teams>", os.Args[0])
+		flag.PrintDefaults()
+		os.Exit(1)
 	}
 	var (
-		orderCsv   = os.Args[1]
-		playersCsv = os.Args[2]
-		rulesCsv   = os.Args[3]
-		schema     = os.Args[4]
+		orderCsv   = flag.Arg(0)
+		playersCsv = flag.Arg(1)
+		rulesCsv   = flag.Arg(2)
+		schema     = flag.Arg(3)
 	)
-	numTeams, err := strconv.Atoi(os.Args[5])
+	numTeams, err := strconv.Atoi(flag.Arg(4))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -39,7 +47,7 @@ func main() {
 	}
 	optStrategies := make([]fantasy.Strategy, len(state.Teams))
 	for i, _ := range state.Teams {
-		optStrategies[i] = fantasy.NewHumanoid(rules, 0.36)
+		optStrategies[i] = fantasy.NewHumanoid(rules, *lambda)
 	}
 	scorer := &fantasy.Scorer{[]byte(schema)}
 

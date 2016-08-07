@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"math/rand"
@@ -10,16 +11,23 @@ import (
 	"github.com/dbtleonia/fantasy"
 )
 
+var (
+	lambda = flag.Float64("lambda", 0.36, "rate parameter for humanoid")
+)
+
 func main() {
-	if len(os.Args) != 6 {
-		log.Fatalf("Usage: %s <order-csv> <players-csv> <rules-csv> <schema> <strategies>", os.Args[0])
+	flag.Parse()
+	if flag.NArg() != 5 {
+		fmt.Fprintf(os.Stderr, "Usage: %s [<flags>] <order-csv> <players-csv> <rules-csv> <schema> <strategies>\n", os.Args[0])
+		flag.PrintDefaults()
+		os.Exit(1)
 	}
 	var (
-		orderCsv       = os.Args[1]
-		playersCsv     = os.Args[2]
-		rulesCsv       = os.Args[3]
-		schema         = os.Args[4]
-		strategyString = os.Args[5]
+		orderCsv       = flag.Arg(0)
+		playersCsv     = flag.Arg(1)
+		rulesCsv       = flag.Arg(2)
+		schema         = flag.Arg(3)
+		strategyString = flag.Arg(4)
 		numTeams       = len(strategyString)
 	)
 	order, err := fantasy.ReadOrder(orderCsv)
@@ -36,7 +44,7 @@ func main() {
 	}
 	optStrategies := make([]fantasy.Strategy, len(state.Teams))
 	for i, _ := range state.Teams {
-		optStrategies[i] = fantasy.NewHumanoid(rules, 0.36)
+		optStrategies[i] = fantasy.NewHumanoid(rules, *lambda)
 	}
 	scorer := &fantasy.Scorer{[]byte(schema)}
 
@@ -46,7 +54,7 @@ func main() {
 		case 'A':
 			strategies[i] = fantasy.NewAutopick(rules)
 		case 'H':
-			strategies[i] = fantasy.NewHumanoid(rules, 0.36)
+			strategies[i] = fantasy.NewHumanoid(rules, *lambda)
 		case 'O':
 			strategies[i] = fantasy.NewOptimize(rules, optStrategies, scorer, 100)
 		default:
