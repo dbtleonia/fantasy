@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	lambda = flag.Float64("lambda", 0.36, "rate parameter for humanoid")
+	lambda    = flag.Float64("lambda", 0.36, "rate parameter for humanoid")
+	numTrials = flag.Int("num_trials", 100, "number of trials to run for optimize")
 )
 
 func main() {
@@ -42,10 +43,23 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	optStrategies := make([]fantasy.Strategy, len(state.Teams))
-	for i, _ := range state.Teams {
-		optStrategies[i] = fantasy.NewHumanoid(rules, *lambda)
+
+	optStrategies := make([]fantasy.Strategy, numTeams)
+	for i, ch := range strategyString {
+		switch ch {
+		case 'A':
+			optStrategies[i] = fantasy.NewAutopick(rules)
+		case 'H':
+			optStrategies[i] = fantasy.NewHumanoid(rules, *lambda)
+		case 'O':
+			// Approiximate Optimize with Autopick.
+			// TODO: Figure out a better approximation.
+			optStrategies[i] = fantasy.NewAutopick(rules)
+		default:
+			log.Fatalf("Invalid strategy: %c", ch)
+		}
 	}
+
 	scorer := &fantasy.Scorer{[]byte(schema)}
 
 	strategies := make([]fantasy.Strategy, numTeams)
@@ -56,7 +70,7 @@ func main() {
 		case 'H':
 			strategies[i] = fantasy.NewHumanoid(rules, *lambda)
 		case 'O':
-			strategies[i] = fantasy.NewOptimize(rules, optStrategies, scorer, 100)
+			strategies[i] = fantasy.NewOptimize(rules, optStrategies, scorer, *numTrials)
 		default:
 			log.Fatalf("Invalid strategy: %c", ch)
 		}

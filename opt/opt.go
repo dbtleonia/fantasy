@@ -6,33 +6,31 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/dbtleonia/fantasy"
 )
 
 var (
-	lambda = flag.Float64("lambda", 0.36, "rate parameter for humanoid")
+	lambda    = flag.Float64("lambda", 0.36, "rate parameter for humanoid")
+	numTrials = flag.Int("num_trials", 200, "number of trials to run for optimize")
 )
 
 func main() {
 	flag.Parse()
 	if flag.NArg() != 5 {
-		fmt.Fprintf(os.Stderr, "Usage: %s [<flags>] <order-csv> <players-csv> <rules-csv> <schema> <num-teams>", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [<flags>] <order-csv> <players-csv> <rules-csv> <schema> <strategies>", os.Args[0])
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
 	var (
-		orderCsv   = flag.Arg(0)
-		playersCsv = flag.Arg(1)
-		rulesCsv   = flag.Arg(2)
-		schema     = flag.Arg(3)
+		orderCsv       = flag.Arg(0)
+		playersCsv     = flag.Arg(1)
+		rulesCsv       = flag.Arg(2)
+		schema         = flag.Arg(3)
+		strategyString = flag.Arg(4)
+		numTeams       = len(strategyString)
 	)
-	numTeams, err := strconv.Atoi(flag.Arg(4))
-	if err != nil {
-		log.Fatal(err)
-	}
 	order, err := fantasy.ReadOrder(orderCsv)
 	if err != nil {
 		log.Fatal(err)
@@ -45,13 +43,28 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	optStrategies := make([]fantasy.Strategy, len(state.Teams))
-	for i, _ := range state.Teams {
-		optStrategies[i] = fantasy.NewHumanoid(rules, *lambda)
+
+	optStrategies := make([]fantasy.Strategy, numTeams)
+	for i, ch := range strategyString {
+		switch ch {
+		case 'A':
+			optStrategies[i] = fantasy.NewAutopick(rules)
+		case 'H':
+			optStrategies[i] = fantasy.NewHumanoid(rules, *lambda)
+		case 'O':
+			// Approiximate Optimize with Autopick.
+			// TODO: Figure out a better approximation.
+			optStrategies[i] = fantasy.NewAutopick(rules)
+		default:
+			log.Fatalf("Invalid strategy: %c", ch)
+		}
 	}
+
 	scorer := &fantasy.Scorer{[]byte(schema)}
 
-	optimize := fantasy.NewOptimize(rules, optStrategies, scorer, 200)
+	// Use optimize for the next pick regardless of what the strategies
+	// arg says.
+	optimize := fantasy.NewOptimize(rules, optStrategies, scorer, *numTrials)
 
 	rand.Seed(time.Now().Unix())
 	for _, c := range optimize.Candidates(state, order) {
