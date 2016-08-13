@@ -17,12 +17,12 @@ func TestAllowedPos(t *testing.T) {
 		{"RRR", "DKQTW", "DKQTW"},           // no more R
 		{"QRW", "DKRTW", "DKRTW"},           // no more Q
 		{"QRRRWWW", "DKT", "DKT"},           // must fill T
-		{"QRRRWWWD", "KT", "KT"},            // must fill T
+		{"DQRRRWWW", "KT", "KT"},            // must fill T
 		{"QRRRTWWW", "DK", "DKQRTW"},        // autopick requires DK before others
 		{"QRRRTWWWWWWWWWW", "DK", "DKQRTW"}, // almost end
 		{"QRRRTWWWWWWWWWWW", "DK", "DK"},    // at end must pick DK
-		{"QRRRTWWWWWWWWWWWK", "D", "D"},     // at end must pick D
-		{"QRRRTWWWWWWWWWWWD", "K", "K"},     // at end must pick K
+		{"KQRRRTWWWWWWWWWWW", "D", "D"},     // at end must pick D
+		{"DQRRRTWWWWWWWWWWW", "K", "K"},     // at end must pick K
 	}
 	for _, tt := range tests {
 		autopick, humanoid := allowedPos(schema, []byte(tt.roster))
