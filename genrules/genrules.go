@@ -9,23 +9,24 @@ import (
 
 func allowedPos(schema, roster []byte) (autopick, humanoid string) {
 	starters := make(map[byte]int)
+	startersCount := 0
 	for _, ch := range schema {
 		if ch != 'B' {
 			starters[ch]++
+			startersCount++
 		}
-	}
-	if starters['D'] != 1 || starters['K'] != 1 {
-		log.Fatal("Illegal roster")
 	}
 	for _, pos := range roster {
 		if starters[pos] > 0 {
 			starters[pos]--
+			startersCount--
 			continue
 		}
 		switch pos {
 		case 'R', 'T', 'W':
 			if starters['X'] > 0 {
 				starters['X']--
+				startersCount--
 			}
 		}
 	}
@@ -43,30 +44,24 @@ func allowedPos(schema, roster []byte) (autopick, humanoid string) {
 		}
 	}
 
-	// Autopick fills all the starters, then allows any position.
-	autopick = allowed
-	if allowed == "" {
-		autopick = "DKQRTW"
+	// Rule #1: Fill starters by end of draft.
+	if len(roster)+startersCount >= len(schema) {
+		return allowed, allowed
 	}
 
+	// Rule #2: Give priority to starters.
+	// Autopick fills all the starters, then allows any position.
+	if startersCount > 0 {
+		autopick = allowed
+	} else {
+		autopick = "DKQRTW"
+	}
 	// Humanoid fills all the starters except D and K, then allows any
-	// position, except that D and K are required at the end.
-	humanoid = allowed
-	switch humanoid {
-	case "":
+	// position.
+	if starters['Q'] > 0 || starters['R'] > 0 || starters['T'] > 0 || starters['W'] > 0 || starters['X'] > 0 {
+		humanoid = allowed
+	} else {
 		humanoid = "DKQRTW"
-	case "D":
-		if len(roster)+1 < len(schema) {
-			humanoid = "DQRTW"
-		}
-	case "K":
-		if len(roster)+1 < len(schema) {
-			humanoid = "KQRTW"
-		}
-	case "DK":
-		if len(roster)+2 < len(schema) {
-			humanoid = "DKQRTW"
-		}
 	}
 	return autopick, humanoid
 }
