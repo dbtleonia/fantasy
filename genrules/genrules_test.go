@@ -16,9 +16,10 @@ func TestAllowedPos(t *testing.T) {
 		{"RR", "DKQRTW", "DKQRTW"},          // still an X roster free
 		{"RRR", "DKQTW", "DKQTW"},           // no more R
 		{"QRW", "DKRTW", "DKRTW"},           // no more Q
-		{"QRRRWWW", "DKT", "DKT"},           // must fill T
-		{"DQRRRWWW", "KT", "KT"},            // must fill T
+		{"RRRWWWT", "DKQ", "DKQ"},           // must fill Q
+		{"DRRRWWWT", "KQ", "KQ"},            // must fill Q
 		{"QRRRTWWW", "DK", "DKQRTW"},        // autopick requires DK before others
+		{"DKQRRRWWW", "T", "DKQRTW"},        // autopick requires T before others
 		{"QRRRTWWWWWWWWWW", "DK", "DKQRTW"}, // almost end
 		{"QRRRTWWWWWWWWWWW", "DK", "DK"},    // at end must pick DK
 		{"KQRRRTWWWWWWWWWWW", "D", "D"},     // at end must pick D

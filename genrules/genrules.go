@@ -56,9 +56,9 @@ func allowedPos(schema, roster []byte) (autopick, humanoid string) {
 	} else {
 		autopick = "DKQRTW"
 	}
-	// Humanoid fills all the starters except D and K, then allows any
+	// Humanoid fills all the starters except DKT, then allows any
 	// position.
-	if starters['Q'] > 0 || starters['R'] > 0 || starters['T'] > 0 || starters['W'] > 0 || starters['X'] > 0 {
+	if starters['Q'] > 0 || starters['R'] > 0 || starters['W'] > 0 || starters['X'] > 0 {
 		humanoid = allowed
 	} else {
 		humanoid = "DKQRTW"
