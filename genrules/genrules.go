@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func allowedPos(schema, roster []byte) (autopick, humanoid string) {
+func allowedPos(schema, priorityStarters, roster []byte) string {
 	starters := make(map[byte]int)
 	startersCount := 0
 	for _, ch := range schema {
@@ -46,24 +46,17 @@ func allowedPos(schema, roster []byte) (autopick, humanoid string) {
 
 	// Rule #1: Fill starters by end of draft.
 	if len(roster)+startersCount >= len(schema) {
-		return allowed, allowed
+		return allowed
 	}
 
 	// Rule #2: Give priority to starters.
-	// Autopick fills all the starters, then allows any position.
-	if startersCount > 0 {
-		autopick = allowed
-	} else {
-		autopick = "DKQRTW"
+	for _, pos := range priorityStarters {
+		if starters[pos] > 0 {
+			return allowed
+		}
 	}
-	// Humanoid fills all the starters except DKT, then allows any
-	// position.
-	if starters['Q'] > 0 || starters['R'] > 0 || starters['W'] > 0 || starters['X'] > 0 {
-		humanoid = allowed
-	} else {
-		humanoid = "DKQRTW"
-	}
-	return autopick, humanoid
+
+	return "DKQRTW"
 }
 
 func main() {
@@ -79,7 +72,8 @@ func main() {
 	out := csv.NewWriter(os.Stdout)
 	for scanner.Scan() {
 		roster := scanner.Text()
-		autopick, humanoid := allowedPos(schema, []byte(roster))
+		autopick := allowedPos(schema, []byte("DKQRTWX"), []byte(roster))
+		humanoid := allowedPos(schema, []byte("QRWX"), []byte(roster))
 		out.Write([]string{roster, autopick, humanoid})
 	}
 	if err := scanner.Err(); err != nil {

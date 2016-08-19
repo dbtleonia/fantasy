@@ -26,10 +26,11 @@ func TestAllowedPos(t *testing.T) {
 		{"DQRRRTWWWWWWWWWWW", "K", "K"},     // at end must pick K
 	}
 	for _, tt := range tests {
-		autopick, humanoid := allowedPos(schema, []byte(tt.roster))
+		autopick := allowedPos(schema, []byte("DKQRTWX"), []byte(tt.roster))
 		if autopick != tt.autopick {
 			t.Errorf("allowedPos(_, %s) = autopick %s; want %s", tt.roster, autopick, tt.autopick)
 		}
+		humanoid := allowedPos(schema, []byte("QRWX"), []byte(tt.roster))
 		if humanoid != tt.humanoid {
 			t.Errorf("allowedPos(_, %s) = humanoid %s; want %s", tt.roster, humanoid, tt.humanoid)
 		}
