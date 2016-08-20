@@ -68,6 +68,6 @@ func main() {
 
 	rand.Seed(time.Now().Unix())
 	for _, c := range optimize.Candidates(state, order) {
-		fmt.Printf("%3d %.2f %s\n", c.Index, c.Value, state.Undrafted[c.Index])
+		fmt.Printf("%.2f %s\n", c.Value, c.Player)
 	}
 }
