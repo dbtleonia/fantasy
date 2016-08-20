@@ -29,6 +29,12 @@ func (x ByPick) Len() int           { return len(x) }
 func (x ByPick) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 func (x ByPick) Less(i, j int) bool { return x[i].Pick < x[j].Pick }
 
+type ByVOR []*Player
+
+func (x ByVOR) Len() int           { return len(x) }
+func (x ByVOR) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
+func (x ByVOR) Less(i, j int) bool { return x[i].VOR < x[j].VOR }
+
 func (p *Player) String() string {
 	// TODO: Don't hardcode %-25s.
 	return fmt.Sprintf("%3d %07d %3d %5.1f %3s %3d %8.4f %9.4f %-3s %-25s # %s", p.Pick, p.ID, p.Rank, p.ADP, p.Pos, p.PosRank, p.Points, p.VOR, p.Team, p.Name, p.Justification)

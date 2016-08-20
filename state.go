@@ -1,5 +1,9 @@
 package fantasy
 
+import (
+	"sort"
+)
+
 type State struct {
 	Teams     []*Team // drafted players
 	Undrafted []*Player
@@ -11,6 +15,7 @@ func ReadState(playersCsv string, numTeams int, order []int) (*State, error) {
 	if err != nil {
 		return nil, err
 	}
+	sort.Sort(sort.Reverse(ByVOR(players)))
 
 	drafted := make(map[int]*Player)
 	var undrafted []*Player
