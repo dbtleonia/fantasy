@@ -7,6 +7,8 @@ import (
 )
 
 type Rules struct {
+	AutopickRaw map[string]string
+	HumanoidRaw map[string]string
 	AutopickMap map[string]map[byte]bool
 	HumanoidMap map[string]map[byte]bool
 }
@@ -16,6 +18,8 @@ func ReadRules(rulesCsv string) (*Rules, error) {
 	if err != nil {
 		return nil, err
 	}
+	autopickRaw := make(map[string]string)
+	humanoidRaw := make(map[string]string)
 	autopickMap := make(map[string]map[byte]bool)
 	humanoidMap := make(map[string]map[byte]bool)
 	r := csv.NewReader(f)
@@ -32,6 +36,8 @@ func ReadRules(rulesCsv string) (*Rules, error) {
 			autopick = record[1]
 			humanoid = record[2]
 		)
+		autopickRaw[roster] = autopick
+		humanoidRaw[roster] = humanoid
 		autopickMap[roster] = make(map[byte]bool)
 		for _, ch := range []byte(autopick) {
 			autopickMap[roster][ch] = true
@@ -41,5 +47,5 @@ func ReadRules(rulesCsv string) (*Rules, error) {
 			humanoidMap[roster][ch] = true
 		}
 	}
-	return &Rules{autopickMap, humanoidMap}, nil
+	return &Rules{autopickRaw, humanoidRaw, autopickMap, humanoidMap}, nil
 }

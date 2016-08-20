@@ -26,12 +26,7 @@ func (a *Autopick) Select(state *State, order []int) (int, string) {
 	allowedPos := a.rules.AutopickMap[team.PosString()]
 	for j, player := range state.Undrafted {
 		if allowedPos[player.Pos[0]] {
-			var justification []string
-			for p, _ := range allowedPos {
-				justification = append(justification, string(p))
-			}
-			sort.Strings(justification)
-			return j, strings.Join(justification, "")
+			return j, a.rules.AutopickRaw[team.PosString()]
 		}
 	}
 	return 0, ""
@@ -51,7 +46,7 @@ func (h *Humanoid) Select(state *State, order []int) (int, string) {
 	team := state.Teams[i]
 	allowedPos := h.rules.HumanoidMap[team.PosString()]
 	r := int(rand.ExpFloat64() / h.lambda)
-	justification := fmt.Sprintf("reached %d", r)
+	justification := fmt.Sprintf("%-6s reached %d", h.rules.HumanoidRaw[team.PosString()], r)
 	for j, player := range state.Undrafted {
 		if allowedPos[player.Pos[0]] {
 			r--
@@ -112,7 +107,7 @@ func (o *Optimize) Candidates(state *State, order []int) []*Candidate {
 		}
 		result = append(result, &Candidate{j, points})
 	}
-	sort.Sort(ByValue(result))
+	sort.Sort(sort.Reverse(ByValue(result)))
 	return result
 }
 
@@ -125,5 +120,5 @@ func (o *Optimize) Select(state *State, order []int) (int, string) {
 		justification = append(justification, fmt.Sprintf("%c%02d=%d", player.Pos[0], player.PosRank, int(c.Value)))
 	}
 
-	return candidates[len(candidates)-1].Index, strings.Join(justification, " ")
+	return candidates[0].Index, strings.Join(justification, " ")
 }
