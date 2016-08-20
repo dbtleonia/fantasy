@@ -99,13 +99,9 @@ func (x ByValue) Less(i, j int) bool { return x[i].Value < x[j].Value }
 
 func (o *Optimize) Candidates(state *State, order []int) []*Candidate {
 	i := order[state.Pick]
-	team := state.Teams[i]
 	var result []*Candidate
 	for _, j := range posLeaders(state.Undrafted) {
 		player := state.Undrafted[j]
-		if !o.rules.HumanoidMap[team.PosString()][player.Pos[0]] {
-			continue // in theory can remove this check
-		}
 		points := 0.0
 		for trial := 0; trial < o.numTrials; trial++ {
 			undrafted := clonePlayers(state.Undrafted)
