@@ -119,3 +119,12 @@ func clonePlayers(players []*Player) []*Player {
 	}
 	return result
 }
+
+func removePlayer(players []*Player, id int) []*Player {
+	for j, p := range players {
+		if p.ID == id {
+			return append(players[:j], players[j+1:]...)
+		}
+	}
+	return players
+}

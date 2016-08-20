@@ -6,9 +6,8 @@ package fantasy
 func RunDraft(state *State, order []int, strategies []Strategy) {
 	for ; state.Pick < len(order); state.Pick++ {
 		i := order[state.Pick]
-		j, justification := strategies[i].Select(state, order)
-		player := state.Undrafted[j]
+		player, justification := strategies[i].Select(state, order)
 		state.Teams[i].Add(player, state.Pick, justification)
-		state.Undrafted = append(state.Undrafted[:j], state.Undrafted[j+1:]...)
+		state.Undrafted = removePlayer(state.Undrafted, player.ID)
 	}
 }
