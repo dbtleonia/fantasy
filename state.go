@@ -5,9 +5,10 @@ import (
 )
 
 type State struct {
-	Teams     []*Team // drafted players
-	Undrafted []*Player
-	Pick      int
+	Teams          []*Team // drafted players
+	UndraftedByVOR []*Player
+	UndraftedByADP []*Player
+	Pick           int
 }
 
 func ReadState(playersCsv string, numTeams int, order []int) (*State, error) {
@@ -15,18 +16,20 @@ func ReadState(playersCsv string, numTeams int, order []int) (*State, error) {
 	if err != nil {
 		return nil, err
 	}
-	sort.Sort(sort.Reverse(ByVOR(players)))
 
 	drafted := make(map[int]*Player)
-	var undrafted []*Player
+	var undraftedByVOR, undraftedByADP []*Player
 	for _, player := range players {
 		if player.Pick == 0 {
-			undrafted = append(undrafted, player)
+			undraftedByVOR = append(undraftedByVOR, player)
+			undraftedByADP = append(undraftedByADP, player)
 		} else {
 			drafted[player.Pick] = player
 			drafted[player.Pick].Pick = 0 // we'll add it back later
 		}
 	}
+	sort.Sort(sort.Reverse(ByVOR(undraftedByVOR)))
+	sort.Sort(ByADP(undraftedByADP))
 
 	teams := make([]*Team, numTeams)
 	for i := 0; i < numTeams; i++ {
@@ -45,8 +48,9 @@ func ReadState(playersCsv string, numTeams int, order []int) (*State, error) {
 	}
 
 	return &State{
-		Teams:     teams,
-		Undrafted: undrafted,
-		Pick:      pick,
+		Teams:          teams,
+		UndraftedByVOR: undraftedByVOR,
+		UndraftedByADP: undraftedByADP,
+		Pick:           pick,
 	}, nil
 }

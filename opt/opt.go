@@ -48,13 +48,13 @@ func main() {
 	for i, ch := range strategyString {
 		switch ch {
 		case 'A':
-			optStrategies[i] = fantasy.NewAutopick(rules)
+			optStrategies[i] = fantasy.NewAutopick(rules, true)
 		case 'H':
-			optStrategies[i] = fantasy.NewHumanoid(rules, *lambda)
+			optStrategies[i] = fantasy.NewHumanoid(rules, true, *lambda)
 		case 'O':
 			// Approiximate Optimize with Autopick.
 			// TODO: Figure out a better approximation.
-			optStrategies[i] = fantasy.NewAutopick(rules)
+			optStrategies[i] = fantasy.NewAutopick(rules, false)
 		default:
 			log.Fatalf("Invalid strategy: %c", ch)
 		}

@@ -8,6 +8,7 @@ func RunDraft(state *State, order []int, strategies []Strategy) {
 		i := order[state.Pick]
 		player, justification := strategies[i].Select(state, order)
 		state.Teams[i].Add(player, state.Pick, justification)
-		state.Undrafted = removePlayer(state.Undrafted, player.ID)
+		state.UndraftedByVOR = removePlayer(state.UndraftedByVOR, player.ID)
+		state.UndraftedByADP = removePlayer(state.UndraftedByADP, player.ID)
 	}
 }

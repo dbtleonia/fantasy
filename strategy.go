@@ -12,32 +12,38 @@ type Strategy interface {
 }
 
 type Autopick struct {
-	rules *Rules
+	rules  *Rules
+	useADP bool
 }
 
-func NewAutopick(rules *Rules) *Autopick {
-	return &Autopick{rules}
+func NewAutopick(rules *Rules, useADP bool) *Autopick {
+	return &Autopick{rules, useADP}
 }
 
 func (a *Autopick) Select(state *State, order []int) (*Player, string) {
 	i := order[state.Pick]
 	team := state.Teams[i]
 	allowedPos := a.rules.AutopickMap[team.PosString()]
-	for _, player := range state.Undrafted {
+	undrafted := state.UndraftedByVOR
+	if a.useADP {
+		undrafted = state.UndraftedByADP
+	}
+	for _, player := range undrafted {
 		if allowedPos[player.Pos[0]] {
 			return player, a.rules.AutopickRaw[team.PosString()]
 		}
 	}
-	return state.Undrafted[0], ""
+	return undrafted[0], ""
 }
 
 type Humanoid struct {
 	rules  *Rules
+	useADP bool
 	lambda float64
 }
 
-func NewHumanoid(rules *Rules, lambda float64) *Humanoid {
-	return &Humanoid{rules, lambda}
+func NewHumanoid(rules *Rules, useADP bool, lambda float64) *Humanoid {
+	return &Humanoid{rules, useADP, lambda}
 }
 
 func (h *Humanoid) Select(state *State, order []int) (*Player, string) {
@@ -46,7 +52,11 @@ func (h *Humanoid) Select(state *State, order []int) (*Player, string) {
 	allowedPos := h.rules.HumanoidMap[team.PosString()]
 	r := int(rand.ExpFloat64() / h.lambda)
 	justification := fmt.Sprintf("%-6s reached %d", h.rules.HumanoidRaw[team.PosString()], r)
-	for _, player := range state.Undrafted {
+	undrafted := state.UndraftedByVOR
+	if h.useADP {
+		undrafted = state.UndraftedByADP
+	}
+	for _, player := range undrafted {
 		if allowedPos[player.Pos[0]] {
 			r--
 		}
@@ -54,7 +64,7 @@ func (h *Humanoid) Select(state *State, order []int) (*Player, string) {
 			return player, justification
 		}
 	}
-	return state.Undrafted[0], ""
+	return undrafted[0], ""
 }
 
 type Optimize struct {
@@ -94,13 +104,14 @@ func (x ByValue) Less(i, j int) bool { return x[i].Value < x[j].Value }
 func (o *Optimize) Candidates(state *State, order []int) []*Candidate {
 	i := order[state.Pick]
 	var result []*Candidate
-	for _, player := range posLeaders(state.Undrafted) {
+	for _, player := range posLeaders(state.UndraftedByVOR) {
 		points := 0.0
 		for trial := 0; trial < o.numTrials; trial++ {
-			undrafted := removePlayer(clonePlayers(state.Undrafted), player.ID)
+			undraftedByVOR := removePlayer(clonePlayers(state.UndraftedByVOR), player.ID)
+			undraftedByADP := removePlayer(clonePlayers(state.UndraftedByADP), player.ID)
 			teams := cloneTeams(state.Teams)
 			teams[i].Add(player, state.Pick, "")
-			RunDraft(&State{teams, undrafted, state.Pick + 1}, order, o.strategies)
+			RunDraft(&State{teams, undraftedByVOR, undraftedByADP, state.Pick + 1}, order, o.strategies)
 			points += o.scorer.Score(teams[i])
 		}
 		result = append(result, &Candidate{player, points})
