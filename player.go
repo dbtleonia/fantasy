@@ -30,7 +30,7 @@ func (x ByPick) Less(i, j int) bool { return x[i].Pick < x[j].Pick }
 
 func (p *Player) String() string {
 	// TODO: Don't hardcode %-25s.
-	return fmt.Sprintf("%3d %07d %3d %3s %3d %8.4f %8.4f %-3s %-25s # %s", p.Pick, p.ID, p.Rank, p.Pos, p.PosRank, p.Points, p.VOR, p.Team, p.Name, p.Justification)
+	return fmt.Sprintf("%3d %07d %3d %3s %3d %8.4f %9.4f %-3s %-25s # %s", p.Pick, p.ID, p.Rank, p.Pos, p.PosRank, p.Points, p.VOR, p.Team, p.Name, p.Justification)
 }
 
 func ReadPlayers(filename string) ([]*Player, error) {
