@@ -21,6 +21,7 @@ func main() {
 		colPoints  = 8
 		colRank    = 11
 		colPosRank = 12
+		colADP     = 16
 	)
 	f, err := os.Open(os.Args[1])
 	if err != nil {
@@ -40,6 +41,9 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		if record[colADP] == "null" {
+			continue // these players ain't gonna be drafted anyhow
+		}
 		out.Write([]string{
 			"0",
 			record[colID],
@@ -50,6 +54,7 @@ func main() {
 			record[colPoints],
 			record[colRank],
 			record[colPosRank],
+			record[colADP],
 		})
 	}
 	out.Flush()
