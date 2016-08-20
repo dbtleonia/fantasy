@@ -100,6 +100,7 @@ func (o *Optimize) Candidates(state *State, order []int) []*Candidate {
 		points := 0.0
 		for trial := 0; trial < o.numTrials; trial++ {
 			undrafted := clonePlayers(state.Undrafted)
+			undrafted = append(undrafted[:j], undrafted[j+1:]...)
 			teams := cloneTeams(state.Teams)
 			teams[i].Add(player, state.Pick, "")
 			RunDraft(&State{teams, undrafted, state.Pick + 1}, order, o.strategies)
