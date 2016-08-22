@@ -44,8 +44,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	optStrategies := make([]fantasy.Strategy, numTeams)
-	for i, ch := range strategyString {
+	optStrategies := make([]fantasy.Strategy, len(order))
+	for i := 1; i < len(order); i++ {
+		t := order[i]
+		ch := strategyString[t]
 		switch ch {
 		case 'A':
 			optStrategies[i] = fantasy.NewAutopick(order, rules, true)
