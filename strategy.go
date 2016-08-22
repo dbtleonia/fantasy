@@ -8,20 +8,21 @@ import (
 )
 
 type Strategy interface {
-	Select(state *State, order []int) (player *Player, justification string)
+	Select(state *State) (player *Player, justification string)
 }
 
 type Autopick struct {
+	order  []int
 	rules  *Rules
 	useADP bool
 }
 
-func NewAutopick(rules *Rules, useADP bool) *Autopick {
-	return &Autopick{rules, useADP}
+func NewAutopick(order []int, rules *Rules, useADP bool) *Autopick {
+	return &Autopick{order, rules, useADP}
 }
 
-func (a *Autopick) Select(state *State, order []int) (*Player, string) {
-	i := order[state.Pick]
+func (a *Autopick) Select(state *State) (*Player, string) {
+	i := a.order[state.Pick]
 	team := state.Teams[i]
 	allowedPos := a.rules.AutopickMap[team.PosString()]
 	undrafted := state.UndraftedByVOR
@@ -37,17 +38,18 @@ func (a *Autopick) Select(state *State, order []int) (*Player, string) {
 }
 
 type Humanoid struct {
+	order  []int
 	rules  *Rules
 	useADP bool
 	lambda float64
 }
 
-func NewHumanoid(rules *Rules, useADP bool, lambda float64) *Humanoid {
-	return &Humanoid{rules, useADP, lambda}
+func NewHumanoid(order []int, rules *Rules, useADP bool, lambda float64) *Humanoid {
+	return &Humanoid{order, rules, useADP, lambda}
 }
 
-func (h *Humanoid) Select(state *State, order []int) (*Player, string) {
-	i := order[state.Pick]
+func (h *Humanoid) Select(state *State) (*Player, string) {
+	i := h.order[state.Pick]
 	team := state.Teams[i]
 	allowedPos := h.rules.HumanoidMap[team.PosString()]
 	r := int(rand.ExpFloat64() / h.lambda)
@@ -68,14 +70,15 @@ func (h *Humanoid) Select(state *State, order []int) (*Player, string) {
 }
 
 type Optimize struct {
-	rules      *Rules
+	order      []int
 	strategies []Strategy
+	rules      *Rules
 	scorer     *Scorer
 	numTrials  int
 }
 
-func NewOptimize(rules *Rules, strategies []Strategy, scorer *Scorer, numTrials int) *Optimize {
-	return &Optimize{rules, strategies, scorer, numTrials}
+func NewOptimize(order []int, strategies []Strategy, rules *Rules, scorer *Scorer, numTrials int) *Optimize {
+	return &Optimize{order, strategies, rules, scorer, numTrials}
 }
 
 func posLeaders(undrafted []*Player) map[string]*Player {
@@ -101,8 +104,8 @@ func (x ByValue) Len() int           { return len(x) }
 func (x ByValue) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 func (x ByValue) Less(i, j int) bool { return x[i].Value < x[j].Value }
 
-func (o *Optimize) Candidates(state *State, order []int) []*Candidate {
-	i := order[state.Pick]
+func (o *Optimize) Candidates(state *State) []*Candidate {
+	i := o.order[state.Pick]
 	var result []*Candidate
 	for _, player := range posLeaders(state.UndraftedByVOR) {
 		points := 0.0
@@ -111,7 +114,7 @@ func (o *Optimize) Candidates(state *State, order []int) []*Candidate {
 			undraftedByADP := removePlayer(clonePlayers(state.UndraftedByADP), player.ID)
 			teams := cloneTeams(state.Teams)
 			teams[i].Add(player, state.Pick, "")
-			RunDraft(&State{teams, undraftedByVOR, undraftedByADP, state.Pick + 1}, order, o.strategies)
+			RunDraft(&State{teams, undraftedByVOR, undraftedByADP, state.Pick + 1}, o.order, o.strategies)
 			points += o.scorer.Score(teams[i])
 		}
 		result = append(result, &Candidate{player, points})
@@ -120,8 +123,8 @@ func (o *Optimize) Candidates(state *State, order []int) []*Candidate {
 	return result
 }
 
-func (o *Optimize) Select(state *State, order []int) (*Player, string) {
-	candidates := o.Candidates(state, order)
+func (o *Optimize) Select(state *State) (*Player, string) {
+	candidates := o.Candidates(state)
 
 	var justification []string
 	for _, c := range candidates {

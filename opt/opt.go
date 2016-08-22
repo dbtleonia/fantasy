@@ -48,13 +48,13 @@ func main() {
 	for i, ch := range strategyString {
 		switch ch {
 		case 'A':
-			optStrategies[i] = fantasy.NewAutopick(rules, true)
+			optStrategies[i] = fantasy.NewAutopick(order, rules, true)
 		case 'H':
-			optStrategies[i] = fantasy.NewHumanoid(rules, true, *lambda)
+			optStrategies[i] = fantasy.NewHumanoid(order, rules, true, *lambda)
 		case 'O':
 			// Approiximate Optimize with Autopick.
 			// TODO: Figure out a better approximation.
-			optStrategies[i] = fantasy.NewAutopick(rules, false)
+			optStrategies[i] = fantasy.NewAutopick(order, rules, false)
 		default:
 			log.Fatalf("Invalid strategy: %c", ch)
 		}
@@ -64,10 +64,10 @@ func main() {
 
 	// Use optimize for the next pick regardless of what the strategies
 	// arg says.
-	optimize := fantasy.NewOptimize(rules, optStrategies, scorer, *numTrials)
+	optimize := fantasy.NewOptimize(order, optStrategies, rules, scorer, *numTrials)
 
 	rand.Seed(time.Now().Unix())
-	for _, c := range optimize.Candidates(state, order) {
+	for _, c := range optimize.Candidates(state) {
 		fmt.Printf("%.2f %s\n", c.Value, c.Player)
 	}
 }
