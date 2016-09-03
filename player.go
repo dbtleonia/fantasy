@@ -21,6 +21,7 @@ type Player struct {
 	Rank    int
 	PosRank int
 	ADP     float64
+	Ceiling float64
 }
 
 type ByPick []*Player
@@ -43,7 +44,7 @@ func (x ByADP) Less(i, j int) bool { return x[i].ADP < x[j].ADP }
 
 func (p *Player) String() string {
 	// TODO: Don't hardcode %-25s.
-	return fmt.Sprintf("%3d %07d %3d %5.1f %3s %3d %8.4f %9.4f %-3s %-25s # %s", p.Pick, p.ID, p.Rank, p.ADP, p.Pos, p.PosRank, p.Points, p.VOR, p.Team, p.Name, p.Justification)
+	return fmt.Sprintf("%3d %07d %3d %5.1f %3s %3d %8.4f %8.4f %9.4f %-3s %-25s # %s", p.Pick, p.ID, p.Rank, p.ADP, p.Pos, p.PosRank, p.Points, p.Ceiling, p.VOR, p.Team, p.Name, p.Justification)
 }
 
 func ReadPlayers(filename string) ([]*Player, error) {
@@ -58,6 +59,7 @@ func ReadPlayers(filename string) ([]*Player, error) {
 		colRank    = 7
 		colPosRank = 8
 		colADP     = 9
+		colCeiling = 10
 	)
 	f, err := os.Open(filename)
 	if err != nil {
@@ -101,6 +103,10 @@ func ReadPlayers(filename string) ([]*Player, error) {
 		if err != nil {
 			return nil, err
 		}
+		ceiling, err := strconv.ParseFloat(record[colCeiling], 64)
+		if err != nil {
+			return nil, err
+		}
 		players = append(players, &Player{
 			Pick:    pick,
 			ID:      id,
@@ -112,6 +118,7 @@ func ReadPlayers(filename string) ([]*Player, error) {
 			Rank:    rank,
 			PosRank: posRank,
 			ADP:     adp,
+			Ceiling: ceiling,
 		})
 	}
 	return players, nil

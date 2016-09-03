@@ -18,7 +18,7 @@ var (
 func main() {
 	flag.Parse()
 	if flag.NArg() != 1 {
-		fmt.Fprintf(os.Stderr, "Usage: %s <projections-csv>", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s <custom-rankings-csv>", os.Args[0])
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
@@ -32,6 +32,7 @@ func main() {
 		colRank    = 11
 		colPosRank = 12
 		colADP     = 16
+		colCeiling = 19
 	)
 	f, err := os.Open(flag.Arg(0))
 	if err != nil {
@@ -72,6 +73,7 @@ func main() {
 			record[colRank],
 			record[colPosRank],
 			record[colADP],
+			record[colCeiling],
 		})
 	}
 	out.Flush()
