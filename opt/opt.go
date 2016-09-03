@@ -64,9 +64,9 @@ func main() {
 		case 'H':
 			optStrategies[i] = fantasy.NewHumanoid(order, rules, true, *lambda)
 		case 'O':
-			// Approiximate Optimize with Autopick.
+			// Approximate Optimize with Humanoid.
 			// TODO: Figure out a better approximation.
-			optStrategies[i] = fantasy.NewAutopick(order, rules, false)
+			optStrategies[i] = fantasy.NewHumanoid(order, rules, false, *lambda)
 		default:
 			log.Fatalf("Invalid strategy: %c", ch)
 		}
