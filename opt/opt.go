@@ -14,6 +14,7 @@ import (
 var (
 	lambda    = flag.Float64("lambda", 0.36, "rate parameter for humanoid")
 	numTrials = flag.Int("num_trials", 200, "number of trials to run for optimize")
+	seed      = flag.Int64("seed", 0, "seed for rand; if 0 uses time")
 )
 
 func main() {
@@ -23,6 +24,14 @@ func main() {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
+
+	s := *seed
+	if s == 0 {
+		s = time.Now().Unix()
+	}
+	fmt.Printf("Using seed %d\n", s)
+	rand.Seed(s)
+
 	var (
 		orderCsv       = flag.Arg(0)
 		playersCsv     = flag.Arg(1)
@@ -68,7 +77,6 @@ func main() {
 	// arg says.
 	optimize := fantasy.NewOptimize(order, optStrategies, rules, scorer, *numTrials)
 
-	rand.Seed(time.Now().Unix())
 	for _, c := range optimize.Candidates(state) {
 		fmt.Printf("%.2f %s\n", c.Value, c.Player)
 	}
