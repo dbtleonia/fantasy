@@ -15,6 +15,7 @@ var (
 	lambda    = flag.Float64("lambda", 0.36, "rate parameter for humanoid")
 	numTrials = flag.Int("num_trials", 100, "number of trials to run for optimize")
 	seed      = flag.Int64("seed", 0, "seed for rand; if 0 uses time")
+	bench     = flag.Bool("bench", false, "score bench (using hardcoded weights)")
 )
 
 func main() {
@@ -71,7 +72,7 @@ func main() {
 		}
 	}
 
-	scorer := &fantasy.Scorer{[]byte(schema)}
+	scorer := &fantasy.Scorer{[]byte(schema), *bench}
 
 	strategies := make([]fantasy.Strategy, len(order))
 	for i := 1; i < len(order); i++ {
