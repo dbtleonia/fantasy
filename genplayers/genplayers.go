@@ -3,14 +3,24 @@ package main
 import (
 	"bufio"
 	"encoding/csv"
+	"flag"
+	"fmt"
 	"io"
 	"log"
 	"os"
+	"strconv"
+)
+
+var (
+	nullADPCutoff = flag.Int("null", 400, "fatal error if player with null ADP has rank less than cutoff")
 )
 
 func main() {
-	if len(os.Args) != 2 {
-		log.Fatalf("Usage: %s <projections-csv>", os.Args[0])
+	flag.Parse()
+	if flag.NArg() != 1 {
+		fmt.Fprintf(os.Stderr, "Usage: %s <projections-csv>", os.Args[0])
+		flag.PrintDefaults()
+		os.Exit(1)
 	}
 	const (
 		colID      = 0
@@ -23,7 +33,7 @@ func main() {
 		colPosRank = 12
 		colADP     = 16
 	)
-	f, err := os.Open(os.Args[1])
+	f, err := os.Open(flag.Arg(0))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,6 +52,13 @@ func main() {
 			log.Fatal(err)
 		}
 		if record[colADP] == "null" {
+			rank, err := strconv.Atoi(record[colRank])
+			if err != nil {
+				log.Fatal(err)
+			}
+			if rank < *nullADPCutoff {
+				log.Fatalf("Player with rank %d (below cutoff %d) has null ADP: %v", rank, *nullADPCutoff, record)
+			}
 			continue // these players ain't gonna be drafted anyhow
 		}
 		out.Write([]string{
