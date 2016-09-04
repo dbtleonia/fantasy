@@ -22,6 +22,7 @@ type Player struct {
 	PosRank int
 	ADP     float64
 	Ceiling float64
+	Bye     int
 }
 
 type ByPick []*Player
@@ -44,7 +45,7 @@ func (x ByADP) Less(i, j int) bool { return x[i].ADP < x[j].ADP }
 
 func (p *Player) String() string {
 	// TODO: Don't hardcode %-25s.
-	return fmt.Sprintf("%3d %07d %3d %5.1f %3s %3d %8.4f %8.4f %9.4f %-3s %-25s # %s", p.Pick, p.ID, p.Rank, p.ADP, p.Pos, p.PosRank, p.Points, p.Ceiling, p.VOR, p.Team, p.Name, p.Justification)
+	return fmt.Sprintf("%3d %07d %3d %5.1f %2d %3s %3d %8.4f %8.4f %9.4f %-3s %-25s # %s", p.Pick, p.ID, p.Rank, p.ADP, p.Bye, p.Pos, p.PosRank, p.Points, p.Ceiling, p.VOR, p.Team, p.Name, p.Justification)
 }
 
 func ReadPlayers(filename string) ([]*Player, error) {
@@ -60,6 +61,7 @@ func ReadPlayers(filename string) ([]*Player, error) {
 		colPosRank = 8
 		colADP     = 9
 		colCeiling = 10
+		colBye     = 11
 	)
 	f, err := os.Open(filename)
 	if err != nil {
@@ -107,6 +109,13 @@ func ReadPlayers(filename string) ([]*Player, error) {
 		if err != nil {
 			return nil, err
 		}
+		var bye int
+		if record[colBye] != "" {
+			bye, err = strconv.Atoi(record[colBye])
+			if err != nil {
+				return nil, err
+			}
+		}
 		players = append(players, &Player{
 			Pick:    pick,
 			ID:      id,
@@ -119,6 +128,7 @@ func ReadPlayers(filename string) ([]*Player, error) {
 			PosRank: posRank,
 			ADP:     adp,
 			Ceiling: ceiling,
+			Bye:     bye,
 		})
 	}
 	return players, nil
