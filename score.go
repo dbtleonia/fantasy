@@ -6,15 +6,22 @@ type Scorer struct {
 }
 
 var (
-	// TODO: Make these configurable.
-	benchWeights = map[byte]float64{
-		'D': 1.0 / 16.0,
-		'K': 0.0 / 16.0,
-		'Q': 2.0 / 16.0,
-		'R': 2.0 / 16.0,
-		'T': 2.0 / 16.0,
-		'W': 2.0 / 16.0,
-		'X': 0.0 / 16.0,
+	posMultiplier = map[byte]float64{
+		'Q': 0.893,
+		'R': 0.861,
+		'W': 0.799,
+		'T': 0.848,
+		'K': 0.512,
+		'D': 0.487,
+	}
+
+	benchWeights = map[byte][]float64{
+		'D': {0.1},
+		'K': {},
+		'Q': {0.1},
+		'R': {0.4, 0.2, 0.1},
+		'T': {0.2},
+		'W': {0.4, 0.2, 0.1},
 	}
 )
 
@@ -24,7 +31,6 @@ func (s *Scorer) Score(team *Team) float64 {
 	for _, ch := range s.Schema {
 		if ch != 'B' {
 			start[ch]++
-			bench[ch]++
 		}
 	}
 	result := 0.0
@@ -32,30 +38,22 @@ func (s *Scorer) Score(team *Team) float64 {
 		ch := player.Pos[0]
 		if start[ch] > 0 {
 			start[ch]--
-			result += player.Points
+			result += player.Points * posMultiplier[ch]
 			continue
 		}
 		switch ch {
 		case 'W', 'R', 'T':
 			if start['X'] > 0 {
 				start['X']--
-				result += player.Points
+				result += player.Points * posMultiplier[ch]
 				continue
 			}
 		}
 		if s.Bench {
-			if bench[ch] > 0 {
-				bench[ch]--
-				result += player.Points * benchWeights[ch]
+			if bench[ch] < len(benchWeights[ch]) {
+				result += player.Points * benchWeights[ch][bench[ch]] * posMultiplier[ch]
+				bench[ch]++
 				continue
-			}
-			switch ch {
-			case 'W', 'R', 'T':
-				if bench['X'] > 0 {
-					bench['X']--
-					result += player.Points * benchWeights['X']
-					continue
-				}
 			}
 		}
 	}

@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	nullADPCutoff    = flag.Int("null_adp_cutoff", 400, "fatal error if player with null ADP has rank less than cutoff")
+	nullADPCutoff    = flag.Int("null_adp_cutoff", 100, "fatal error if player with null ADP has rank less than cutoff")
 	missingByeCutoff = flag.Int("missing_bye_cutoff", 10, "fatal error if more than this number of players is missing a bye")
 )
 
@@ -64,15 +64,15 @@ func main() {
 	}
 	const (
 		colID      = 0
-		colName    = 2
+		colName    = 1
 		colPos     = 3
-		colTeam    = 4
-		colVOR     = 7
-		colPoints  = 8
-		colRank    = 11
-		colPosRank = 12
-		colADP     = 16
-		colCeiling = 19
+		colTeam    = 2
+		colVOR     = 20
+		colPoints  = 19
+		colRank    = 23
+		colPosRank = 24
+		colADP     = 13 // ECR
+		colCeiling = 22
 	)
 	f, err := os.Open(flag.Arg(0))
 	if err != nil {
@@ -93,7 +93,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if record[colADP] == "null" {
+		if record[colADP] == "NA" {
 			rank, err := strconv.Atoi(record[colRank])
 			if err != nil {
 				log.Fatal(err)
