@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/csv"
 	"flag"
 	"fmt"
@@ -27,11 +26,10 @@ func readByes(filename string) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	r := bufio.NewReader(f)
-	if _, err := r.ReadString('\n'); err != nil { // discard the first line
+	in := csv.NewReader(f)
+	if _, err = in.Read(); err != nil { // discard the first line
 		return nil, err
 	}
-	in := csv.NewReader(r)
 	byes := make(map[string]string) // key is <name><pos><team>
 	for {
 		record, err := in.Read()
@@ -71,18 +69,17 @@ func main() {
 		colPoints  = 19
 		colRank    = 23
 		colPosRank = 24
-		colADP     = 13 // ECR
+		colADP     = 29 // alternative is ECR in col 13
 		colCeiling = 22
 	)
 	f, err := os.Open(flag.Arg(0))
 	if err != nil {
 		log.Fatal(err)
 	}
-	r := bufio.NewReader(f)
-	if _, err := r.ReadString('\n'); err != nil { // discard the first line
+	in := csv.NewReader(f)
+	if _, err = in.Read(); err != nil { // discard the first line
 		log.Fatal(err)
 	}
-	in := csv.NewReader(r)
 	out := csv.NewWriter(os.Stdout)
 	missingByeCount := 0
 	for {
