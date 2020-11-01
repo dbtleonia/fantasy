@@ -31,13 +31,16 @@ func main() {
 			maxPick = player.Pick
 		}
 	}
+	foundNextPick := false
 	for i := 1; i <= maxPick; i++ {
-		player, ok := drafted[i]
-		if !ok {
-			errors = append(errors, fmt.Sprintf("Pick %d is missing", i))
-			continue
+		if player, ok := drafted[i]; ok {
+			fmt.Printf("%s\n", player)
+		} else {
+			if !foundNextPick {
+				foundNextPick = true
+				fmt.Printf(">>>>>>>>>>>>>>> next pick = %d\n", i)
+			}
 		}
-		fmt.Printf("%s\n", player)
 	}
 	for _, e := range errors {
 		fmt.Printf("*** %s\n", e)
