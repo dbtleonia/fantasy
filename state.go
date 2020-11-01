@@ -11,10 +11,10 @@ type State struct {
 	Pick           int
 }
 
-func ReadState(playersCsv string, numTeams int, order []int) (*State, error) {
+func ReadState(playersCsv string, numTeams int, order []int) (*State, []int, error) {
 	players, err := ReadPlayers(playersCsv)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	drafted := make(map[int]*Player)
@@ -38,13 +38,25 @@ func ReadState(playersCsv string, numTeams int, order []int) (*State, error) {
 
 	pick := 1
 	for {
-		player, ok := drafted[pick]
-		if !ok {
+		if _, ok := drafted[pick]; !ok {
 			break
 		}
-		i := order[pick]
-		teams[i].Add(player, pick, "")
 		pick++
+	}
+
+	newOrder := make([]int, len(order))
+	for pk, o := range order {
+		newOrder[pk] = o
+	}
+
+	for pk, i := range order {
+		if pk == 0 {
+			continue
+		}
+		if player, ok := drafted[pk]; ok {
+			teams[i].Add(player, pk, "")
+			newOrder[pk] = -1
+		}
 	}
 
 	return &State{
@@ -52,5 +64,5 @@ func ReadState(playersCsv string, numTeams int, order []int) (*State, error) {
 		UndraftedByVOR: undraftedByVOR,
 		UndraftedByADP: undraftedByADP,
 		Pick:           pick,
-	}, nil
+	}, newOrder, nil
 }

@@ -81,17 +81,23 @@ func NewOptimize(order []int, strategies []Strategy, rules *Rules, scorer *Score
 	return &Optimize{order, strategies, rules, scorer, numTrials}
 }
 
-func posLeaders(undrafted []*Player) map[string]*Player {
-	leaders := make(map[string]*Player)
+func posLeaders(undrafted []*Player) []*Player {
+	n := 0
+	leaders := make(map[string][]*Player)
 	for _, player := range undrafted {
-		if len(leaders) == len("DKQRTW") {
+		if len(leaders[player.Pos]) < 3 {
+			leaders[player.Pos] = append(leaders[player.Pos], player)
+			n++
+		}
+		if n == 18 {
 			break
 		}
-		if _, present := leaders[player.Pos]; !present {
-			leaders[player.Pos] = player
-		}
 	}
-	return leaders
+	var result []*Player
+	for _, players := range leaders {
+		result = append(result, players...)
+	}
+	return result
 }
 
 type Candidate struct {

@@ -41,11 +41,11 @@ func main() {
 		strategyString = flag.Arg(4)
 		numTeams       = len(strategyString)
 	)
-	order, err := fantasy.ReadOrder(orderCsv)
+	rawOrder, err := fantasy.ReadOrder(orderCsv)
 	if err != nil {
 		log.Fatal(err)
 	}
-	state, err := fantasy.ReadState(playersCsv, numTeams, order)
+	state, order, err := fantasy.ReadState(playersCsv, numTeams, rawOrder)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -57,6 +57,9 @@ func main() {
 	optStrategies := make([]fantasy.Strategy, len(order))
 	for i := 1; i < len(order); i++ {
 		t := order[i]
+		if t == -1 { // this pick is a keeper, skip it
+			continue
+		}
 		ch := strategyString[t]
 		switch ch {
 		case 'A':
@@ -77,6 +80,9 @@ func main() {
 	strategies := make([]fantasy.Strategy, len(order))
 	for i := 1; i < len(order); i++ {
 		t := order[i]
+		if t == -1 { // this pick is a keeper, skip it
+			continue
+		}
 		ch := strategyString[t]
 		switch ch {
 		case 'A':

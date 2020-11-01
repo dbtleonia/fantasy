@@ -6,6 +6,9 @@ package fantasy
 func RunDraft(state *State, order []int, strategies []Strategy) {
 	for ; state.Pick < len(order); state.Pick++ {
 		i := order[state.Pick]
+		if i == -1 { // this pick is a keeper, skip it
+			continue
+		}
 		player, justification := strategies[state.Pick].Select(state)
 		state.Teams[i].Add(player, state.Pick, justification)
 		state.UndraftedByVOR = removePlayer(state.UndraftedByVOR, player.ID)
