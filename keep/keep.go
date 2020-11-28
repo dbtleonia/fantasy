@@ -56,11 +56,12 @@ type constants struct {
 }
 
 type keep struct {
-	pick int
-	gid  gridderid
+	pick  int
+	gid   gridderid
+	value float64
 }
 
-type action []keep
+type action []*keep
 
 func (a action) findPick(pick int) (gridderid, bool) {
 	for _, k := range a {
@@ -188,7 +189,8 @@ func Run(body io.Reader, w io.Writer) error {
 	for i, profile := range profiles {
 		for _, action := range profile {
 			for _, k := range action {
-				result[i] = append(result[i], []interface{}{k.gid + 1, "X"})
+				round := fmt.Sprintf("%X", (k.pick/len(profile))+1)
+				result[i] = append(result[i], []interface{}{k.gid + 1, round, k.value})
 			}
 		}
 	}
@@ -200,7 +202,7 @@ func iteratedProfiles(consts *constants) [][]action {
 	profiles := [][]action{
 		{nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil},
 	}
-	for i := 0; i < 30; i++ {
+	for i := 0; i < 20; i++ {
 		prevProfile := profiles[len(profiles)-1]
 		profile := make([]action, len(consts.managers))
 		for m := 0; m < len(consts.managers); m++ {
@@ -221,8 +223,8 @@ func bestResponse(c *constants, mid managerid, actions []action) action {
 			newActions[i] = a
 		}
 	}
+	prevU := utilityOne(c, newActions, mid)
 	var response action
-	prevU := math.Inf(-1)
 	for k := 0; k < 4; k++ {
 		bestU := math.Inf(-1)
 		bestPick := 0
@@ -241,7 +243,7 @@ func bestResponse(c *constants, mid managerid, actions []action) action {
 			if allowedPick == -1 {
 				continue
 			}
-			newActions[mid] = append(action{{allowedPick, gid}}, response...)
+			newActions[mid] = append(action{{allowedPick, gid, 0}}, response...)
 			u := utilityOne(c, newActions, mid)
 			if u > bestU {
 				bestU = u
@@ -252,8 +254,8 @@ func bestResponse(c *constants, mid managerid, actions []action) action {
 		if bestU < prevU {
 			break
 		}
+		response = append(response, &keep{bestPick, bestGid, bestU - prevU})
 		prevU = bestU
-		response = append(response, keep{bestPick, bestGid})
 	}
 	return response
 }
@@ -286,4 +288,13 @@ func utilityAccum(c *constants, actions []action, accum func(pick int, mid manag
 			next++
 		}
 	}
+}
+
+// Note: Not currently used.
+func rosters(c *constants, actions []action) [][]gridderid {
+	result := make([][]gridderid, len(actions))
+	utilityAccum(c, actions, func(pick int, mid managerid, gid gridderid) {
+		result[mid] = append(result[mid], gid)
+	})
+	return result
 }
