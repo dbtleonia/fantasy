@@ -20,6 +20,8 @@ var (
 	// Inputs:
 	//   <data_dir>/merged.csv
 	dataDir = flag.String("data_dir", "", "directory containing data sources")
+
+	printValues = flag.Bool("print_values", false, "print values")
 )
 
 func main() {
@@ -104,16 +106,26 @@ func main() {
 		}
 		fmt.Printf("%-16s %35s @ %2d ", row[2], row[0], int(row[3].(float64)))
 		for _, keeps := range result {
-			found := false
+			var round string
+			var value float64
 			for _, k := range keeps {
 				if g+1 == int(k[0].(float64)) {
-					found = true
+					round = k[1].(string)
+					value = k[2].(float64)
 				}
 			}
-			if found {
-				fmt.Printf("X")
+			if *printValues {
+				if len(round) > 0 {
+					fmt.Printf("%4.1f ", value)
+				} else {
+					fmt.Printf(".... ")
+				}
 			} else {
-				fmt.Printf(".")
+				if len(round) > 0 {
+					fmt.Printf("X")
+				} else {
+					fmt.Printf(".")
+				}
 			}
 		}
 		fmt.Printf("\n")
