@@ -21,7 +21,8 @@ var (
 	//   <data_dir>/merged.csv
 	dataDir = flag.String("data_dir", "", "directory containing data sources")
 
-	printValues = flag.Bool("print_values", false, "print values")
+	normalizePoints = flag.Bool("normalize_points", true, "normalize points")
+	printValues     = flag.Bool("print_values", false, "print values")
 )
 
 func main() {
@@ -55,21 +56,25 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		switch {
-		case strings.Contains(record[0], "- DEF"):
-			row[1] = projection - 110.0
-		case strings.Contains(record[0], "- K"):
-			row[1] = projection - 135.0
-		case strings.Contains(record[0], "- QB"):
-			row[1] = projection - 255.0
-		case strings.Contains(record[0], "- RB"):
-			row[1] = projection - 110.0
-		case strings.Contains(record[0], "- TE"):
-			row[1] = projection - 70.0
-		case strings.Contains(record[0], "- WR"):
-			row[1] = projection - 85.0
-		default:
-			log.Fatal("Unknown pos in %v", record[0])
+		if *normalizePoints {
+			switch {
+			case strings.Contains(record[0], "- DEF"):
+				row[1] = projection - 110.0
+			case strings.Contains(record[0], "- K"):
+				row[1] = projection - 135.0
+			case strings.Contains(record[0], "- QB"):
+				row[1] = projection - 255.0
+			case strings.Contains(record[0], "- RB"):
+				row[1] = projection - 110.0
+			case strings.Contains(record[0], "- TE"):
+				row[1] = projection - 70.0
+			case strings.Contains(record[0], "- WR"):
+				row[1] = projection - 85.0
+			default:
+				log.Fatal("Unknown pos in %v", record[0])
+			}
+		} else {
+			row[1] = projection
 		}
 		row[2] = record[2]
 		if record[3] == "" {
