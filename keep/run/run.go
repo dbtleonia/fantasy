@@ -21,7 +21,7 @@ var (
 	//   <data_dir>/merged.csv
 	dataDir = flag.String("data_dir", "", "directory containing data sources")
 
-	normalizePoints = flag.Bool("normalize_points", true, "normalize points")
+	normalizePoints = flag.Bool("normalize_points", false, "normalize points")
 	printValues     = flag.Bool("print_values", false, "print values")
 )
 
@@ -109,7 +109,7 @@ func main() {
 		if row[2] == "" {
 			continue
 		}
-		fmt.Printf("%-16s %35s @ %2d ", row[2], row[0], int(row[3].(float64)))
+		fmt.Printf("%-20s %35s @ %2d ", row[2], row[0], int(row[3].(float64)))
 		for _, keeps := range result {
 			var round string
 			var value float64
