@@ -225,7 +225,7 @@ func bestResponse(c *constants, mid managerid, actions []action) action {
 	}
 	prevU := utilityOne(c, newActions, mid)
 	var response action
-	for k := 0; k < 4; k++ {
+	for k := 0; k < 3; k++ {
 		bestU := math.Inf(-1)
 		bestPick := 0
 		bestGid := gridderid(0)

@@ -16,9 +16,11 @@ var (
 	// ===== Format 1 =====
 	//
 	// Inputs:
-	//   <data_dir>/managers/<manager-name>.csv
-	//     field 0   = <gridder-name> (<team> - <pos>)
-	//     field 1   = <round>
+	//   <data_dir>/managers.csv
+	//     field 0   = <manager>
+	//     field 2   = <gridder-name>
+	//     field 3   = (<team> - <pos>)
+	//     field 8   = <round>
 	//   <data_dir>/projections/<pos>.csv
 	//     field 0   = <gridder-name>
 	//     field 1   = <team>  # uppercase; empty for DEF.csv
@@ -34,14 +36,17 @@ var (
 	// ===== Format 2 =====
 	//
 	// Inputs:
-	//   <data_dir>/managers/<manager-name>.csv
-	//     field 0   = <gridder-name> (<team> - <pos>)
-	//     field 1   = <round>
+	//   <data_dir>/managers.csv
+	//     field 0   = <manager>
+	//     field 2   = <gridder-name>
+	//     field 3   = (<team> - <pos>)
+	//     field 8   = <round>
 	//   <data_dir>/projections.csv
-	//     field 1   = <gridder-name>
+	//     field 0   = <gridder-name>
+	//     field 1   = <pos>
 	//     field 2   = <team>  # uppercase
-	//     field 3   = <pos>
-	//     field 20  = <projection>  # vor
+	//     field 4   = <stddev>
+	//     field 8   = <projection>  # vor
 	//   <data_dir>/missing.csv
 	//     field 0   = <gridder-name> (<team> - <pos>)
 	//   <data_dir>/renames.csv
@@ -273,6 +278,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		defer pfile.Close()
 		preader := csv.NewReader(pfile)
 		preader.Read() // skip header
 		for {
@@ -285,80 +291,73 @@ func main() {
 			}
 
 			var bigname string
-			if record[3] == "DST" {
+			if record[1] == "DST" {
 				var ok bool
-				bigname, ok = defnames2[record[1]]
+				bigname, ok = defnames2[record[0]]
 				if !ok {
-					log.Fatalf("Unknown name: %q in record %v", record[1], record)
+					log.Fatalf("Unknown name: %q in record %v", record[0], record)
 				}
 			} else {
-				name := record[1]
+				name := record[0]
 				team, ok := teams[record[2]]
 				if !ok {
 					log.Fatalf("Unknown team: %q in record %v", record[2], record)
 				}
-				pos := record[3]
+				pos := record[1]
 				bigname = fmt.Sprintf("%s (%s - %s)", name, team, pos)
 				if rename, ok := renames[bigname]; ok {
 					bigname = rename
 				}
 			}
-			vor := record[20]
+			vor := record[8]
 			projections[bigname] = vor
 		}
 	}
 
 	// Read managers & write owned gridders.
-	mfiles, err := ioutil.ReadDir(path.Join(*dataDir, "managers"))
+	mgrfile, err := os.Open(path.Join(*dataDir, "managers.csv"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, file := range mfiles {
-		managerName := strings.TrimSuffix(file.Name(), ".csv")
-		f, err := os.Open(path.Join(*dataDir, "managers", file.Name()))
+	defer mgrfile.Close()
+	mgrreader := csv.NewReader(mgrfile)
+	mgrreader.Read() // skip header
+
+	for {
+		record, err := mgrreader.Read()
+		if err == io.EOF {
+			break
+		}
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer f.Close()
 
-		r := csv.NewReader(f)
-		r.Read() // skip header
+		var (
+			managerName = record[0]
+			name        = record[2] + " " + record[3]
+			round       = record[8]
+		)
 
-		for {
-			record, err := r.Read()
-			if err == io.EOF {
-				break
+		proj, ok := projections[name]
+		if !ok {
+			if !missing[name] {
+				log.Fatalf("No projection for %q\n", name)
 			}
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			var (
-				name  = record[0]
-				round = record[1]
-			)
-
-			proj, ok := projections[name]
-			if !ok {
-				if !missing[name] {
-					log.Fatalf("No projection for %q\n", name)
-				}
-				if isFormat1 {
-					proj = "0.0"
-				} else {
-					proj = "-999.0"
-				}
+			if isFormat1 {
+				proj = "0.0"
 			} else {
-				delete(projections, name)
-			}
-			if !isFormat1 && strings.Contains(name, "- K") {
 				proj = "-999.0"
 			}
+		} else {
+			delete(projections, name)
+		}
+		if !isFormat1 && strings.Contains(name, "- K") {
+			proj = "-999.0"
+		}
 
-			r := []string{name, proj, managerName, round}
-			if err := writer.Write(r); err != nil {
-				log.Fatal(err)
-			}
+		r := []string{name, proj, managerName, round}
+		if err := writer.Write(r); err != nil {
+			log.Fatal(err)
 		}
 	}
 
