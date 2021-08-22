@@ -1,12 +1,7 @@
-package keep
+package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"log"
 	"math"
-	"net/http"
 	"sort"
 )
 
@@ -81,65 +76,12 @@ func (a action) hasGID(gid gridderid) bool {
 	return false
 }
 
-func Handle(w http.ResponseWriter, r *http.Request) {
-	if err := Run(r.Body, w); err != nil {
-		log.Printf("%v", err)
-	}
-}
-
-func Run(body io.Reader, w io.Writer) error {
-	var rows [][]interface{}
-	if err := json.NewDecoder(body).Decode(&rows); err != nil {
-		return err
-	}
-
-	// Set up gridders & managers.
-	var gridders []*gridder
-	var managers []*manager
-	managerids := make(map[string]managerid)
+func Run(gridders []*gridder, managers []*manager) ([][]action, error) {
 	var maxRound int
-	for g, row := range rows[1:] { // skip header
-		gridderName, ok := row[0].(string)
-		if !ok {
-			return fmt.Errorf("field 0 not a string in %v", row)
+	for _, gridder := range gridders {
+		if gridder.round > maxRound {
+			maxRound = gridder.round
 		}
-		value, ok := row[1].(float64)
-		if !ok {
-			return fmt.Errorf("field 1 not a float64 in %v", row)
-		}
-		managerName, ok := row[2].(string)
-		if !ok {
-			return fmt.Errorf("field 2 not a string in %v", row)
-		}
-		mid := managerid(-1)
-		var round int
-		if managerName != "" {
-			var ok bool
-			mid, ok = managerids[managerName]
-			if !ok {
-				mid = managerid(len(managers)) // generate new mid
-				managerids[managerName] = mid
-				managers = append(managers, &manager{
-					name: managerName,
-				})
-			}
-			managers[mid].gids = append(managers[mid].gids, gridderid(g))
-
-			roundFloat, ok := row[3].(float64)
-			if !ok {
-				return fmt.Errorf("field 3 is not a float64 in %v", row)
-			}
-			round = int(roundFloat)
-			if round > maxRound {
-				maxRound = round
-			}
-		}
-		gridders = append(gridders, &gridder{
-			name:  gridderName,
-			value: value,
-			mid:   mid,
-			round: round,
-		})
 	}
 
 	// Set up picks.  Assume picks are snake draft in alphabetical order
@@ -185,17 +127,7 @@ func Run(body io.Reader, w io.Writer) error {
 	consts := &constants{managers, gridders, picks, gidsByValue}
 	profiles := iteratedProfiles(consts)
 
-	result := make([][][]interface{}, len(profiles))
-	for i, profile := range profiles {
-		for _, action := range profile {
-			for _, k := range action {
-				round := fmt.Sprintf("%X", (k.pick/len(profile))+1)
-				result[i] = append(result[i], []interface{}{k.gid + 1, round, k.value})
-			}
-		}
-	}
-
-	return json.NewEncoder(w).Encode(result)
+	return profiles, nil
 }
 
 func iteratedProfiles(consts *constants) [][]action {
