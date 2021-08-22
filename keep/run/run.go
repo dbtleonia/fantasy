@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"encoding/csv"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -12,8 +10,6 @@ import (
 	"path"
 	"strconv"
 	"strings"
-
-	"github.com/dbtleonia/fantasy/keep"
 )
 
 var (
@@ -27,21 +23,20 @@ var (
 
 func main() {
 	flag.Parse()
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	// Convert the CSV to serialized JSON so that we can call the
-	// library function.
-	var rows [][]interface{}
 	f, err := os.Open(path.Join(*dataDir, "merged.csv"))
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer f.Close()
 	reader := csv.NewReader(f)
-	header, err := reader.Read()
-	if err != nil {
+	if _, err = reader.Read(); err != nil { // ignore header
 		log.Fatal(err)
 	}
-	rows = append(rows, []interface{}{header[0], header[1], header[2], header[3]})
+	var gridders []*gridder
+	var managers []*manager
+	managerids := make(map[string]managerid)
 	for {
 		record, err := reader.Read()
 		if err == io.EOF {
@@ -50,73 +45,90 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		row := make([]interface{}, 4)
-		row[0] = record[0]
+
+		gridderName := record[0]
 		projection, err := strconv.ParseFloat(record[1], 64)
 		if err != nil {
 			log.Fatal(err)
 		}
+		var value float64
 		if *normalizePoints {
 			switch {
 			case strings.Contains(record[0], "- DEF"):
-				row[1] = projection - 110.0
+				value = projection - 110.0
 			case strings.Contains(record[0], "- K"):
-				row[1] = projection - 135.0
+				value = projection - 135.0
 			case strings.Contains(record[0], "- QB"):
-				row[1] = projection - 255.0
+				value = projection - 255.0
 			case strings.Contains(record[0], "- RB"):
-				row[1] = projection - 110.0
+				value = projection - 110.0
 			case strings.Contains(record[0], "- TE"):
-				row[1] = projection - 70.0
+				value = projection - 70.0
 			case strings.Contains(record[0], "- WR"):
-				row[1] = projection - 85.0
+				value = projection - 85.0
 			default:
 				log.Fatal("Unknown pos in %v", record[0])
 			}
 		} else {
-			row[1] = projection
+			value = projection
 		}
-		row[2] = record[2]
+		managerName := record[2]
+		mid := managerid(-1)
+		if managerName != "" {
+			var ok bool
+			mid, ok = managerids[managerName]
+			if !ok {
+				mid = managerid(len(managers)) // generate new mid
+				managerids[managerName] = mid
+				managers = append(managers, &manager{
+					name: managerName,
+				})
+			}
+			gid := gridderid(len(gridders)) // this will be gid for new gridder
+			managers[mid].gids = append(managers[mid].gids, gid)
+		}
+
+		var round int
 		if record[3] == "" {
-			row[3] = ""
+			round = 0
 		} else {
-			row[3], err = strconv.ParseFloat(record[3], 64)
+			round, err = strconv.Atoi(record[3])
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
-		rows = append(rows, row)
+
+		gridders = append(gridders, &gridder{
+			name:  gridderName,
+			value: value,
+			mid:   mid,
+			round: round,
+		})
 	}
 
 	// Call the library function.
-	b, err := json.Marshal(rows)
+	profiles, err := Run(gridders, managers)
 	if err != nil {
-		log.Fatal(err)
-	}
-	var buf bytes.Buffer
-	if err := keep.Run(bytes.NewReader(b), &buf); err != nil {
-		log.Fatal(err)
-	}
-	var result [][][]interface{}
-	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
 		log.Fatal(err)
 	}
 
 	// Output the results.  This currently loops through the entire
 	// response for each gridder.  We could make it more efficient if
 	// necessary.
-	for g, row := range rows[1:] {
-		if row[2] == "" {
+	for g, gridder := range gridders {
+		if gridder.mid == -1 {
 			continue
 		}
-		fmt.Printf("%-20s %35s @ %2d ", row[2], row[0], int(row[3].(float64)))
-		for _, keeps := range result {
+		fmt.Printf("%-20s %35s @ %2d ", managers[gridder.mid].name, gridder.name, gridder.round)
+		for _, profile := range profiles {
 			var round string
 			var value float64
-			for _, k := range keeps {
-				if g+1 == int(k[0].(float64)) {
-					round = k[1].(string)
-					value = k[2].(float64)
+			for _, keeps := range profile {
+				for _, k := range keeps {
+					if gridderid(g) == k.gid {
+						round = fmt.Sprintf("%X", (k.pick/len(profile) + 1))
+						value = k.value
+					}
 				}
 			}
 			if *printValues {
