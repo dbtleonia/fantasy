@@ -119,7 +119,11 @@ func main() {
 		if gridder.mid == -1 {
 			continue
 		}
-		fmt.Printf("%-20s %35s @ %2d ", managers[gridder.mid].name, gridder.name, gridder.round)
+		managerName := managers[gridder.mid].name
+		if len(managerName) > 20 {
+			managerName = managerName[:20]
+		}
+		fmt.Printf("%-20s %35s (%6.1f) @ %2d ", managerName, gridder.name, gridder.value, gridder.round)
 		for _, profile := range profiles {
 			var round string
 			var value float64
