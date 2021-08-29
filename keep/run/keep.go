@@ -51,9 +51,8 @@ type constants struct {
 }
 
 type keep struct {
-	pick  int
-	gid   gridderid
-	value float64
+	pick int
+	gid  gridderid
 }
 
 type action []*keep
@@ -76,7 +75,7 @@ func (a action) hasGID(gid gridderid) bool {
 	return false
 }
 
-func Run(gridders []*gridder, managers []*manager) ([][]action, error) {
+func Constants(gridders []*gridder, managers []*manager) *constants {
 	var maxRound int
 	for _, gridder := range gridders {
 		if gridder.round > maxRound {
@@ -124,10 +123,7 @@ func Run(gridders []*gridder, managers []*manager) ([][]action, error) {
 	}
 	sort.Sort(byGridderValue{gidsByValue, gridders})
 
-	consts := &constants{managers, gridders, picks, gidsByValue}
-	profiles := iteratedProfiles(consts)
-
-	return profiles, nil
+	return &constants{managers, gridders, picks, gidsByValue}
 }
 
 func iteratedProfiles(consts *constants) [][]action {
@@ -175,7 +171,7 @@ func bestResponse(c *constants, mid managerid, actions []action) action {
 			if allowedPick == -1 {
 				continue
 			}
-			newActions[mid] = append(action{{allowedPick, gid, 0}}, response...)
+			newActions[mid] = append(action{{allowedPick, gid}}, response...)
 			u := utilityOne(c, newActions, mid)
 			if u > bestU {
 				bestU = u
@@ -186,7 +182,7 @@ func bestResponse(c *constants, mid managerid, actions []action) action {
 		if bestU < prevU {
 			break
 		}
-		response = append(response, &keep{bestPick, bestGid, bestU - prevU})
+		response = append(response, &keep{bestPick, bestGid})
 		prevU = bestU
 	}
 	return response
@@ -194,7 +190,7 @@ func bestResponse(c *constants, mid managerid, actions []action) action {
 
 func utilityOne(c *constants, actions []action, mid1 managerid) float64 {
 	result := 0.0
-	utilityAccum(c, actions, func(pick int, mid managerid, gid gridderid) {
+	utilityAccum(c, actions, func(pick int, mid managerid, gid gridderid, _ bool) {
 		if mid == mid1 {
 			result += c.gridders[gid].value
 		}
@@ -202,11 +198,11 @@ func utilityOne(c *constants, actions []action, mid1 managerid) float64 {
 	return result
 }
 
-func utilityAccum(c *constants, actions []action, accum func(pick int, mid managerid, gid gridderid)) {
+func utilityAccum(c *constants, actions []action, accum func(pick int, mid managerid, gid gridderid, iskeep bool)) {
 	next := 0
 	for pick, mid := range c.picks {
 		if gid, ok := actions[mid].findPick(pick); ok {
-			accum(pick, mid, gid)
+			accum(pick, mid, gid, true)
 		} else {
 			gid := c.gidsByValue[next]
 			for {
@@ -216,7 +212,7 @@ func utilityAccum(c *constants, actions []action, accum func(pick int, mid manag
 				next++
 				gid = c.gidsByValue[next]
 			}
-			accum(pick, mid, gid)
+			accum(pick, mid, gid, false)
 			next++
 		}
 	}
@@ -225,7 +221,7 @@ func utilityAccum(c *constants, actions []action, accum func(pick int, mid manag
 // Note: Not currently used.
 func rosters(c *constants, actions []action) [][]gridderid {
 	result := make([][]gridderid, len(actions))
-	utilityAccum(c, actions, func(pick int, mid managerid, gid gridderid) {
+	utilityAccum(c, actions, func(pick int, mid managerid, gid gridderid, _ bool) {
 		result[mid] = append(result[mid], gid)
 	})
 	return result
