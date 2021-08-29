@@ -1,0 +1,68 @@
+<html>
+  <head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+      google.charts.load('current', {'packages': ['corechart']});
+      google.charts.setOnLoadCallback(drawChart);
+      function drawChart() {
+          let managerNames = {{.managerNames}};
+          let managersPre = {{.managersPre}};
+          let managersPost = {{.managersPost}};
+          let pickNames = {{.pickNames}};
+          let picksPre = {{.picksPre}};
+          let picksPost = {{.picksPost}};
+          let keepers = {{.keepers}};
+
+          let mgrTable = new google.visualization.DataTable();
+          mgrTable.addColumn('string')
+          mgrTable.addColumn('number', 'pre');
+          mgrTable.addColumn('number', 'post');
+          mgrTable.addColumn({'type': 'string', 'role': 'annotation'});
+          for (let i = 0; i < managerNames.length; i++) {
+              let a = ""
+              if (managersPost[i] > managersPre[i]) {
+                  a = "+" + (managersPost[i] - managersPre[i])
+              } else {
+                  a = "−" + (managersPre[i] - managersPost[i])
+              }
+              mgrTable.addRows([[managerNames[i], managersPre[i], managersPost[i], a]]);
+          }
+          let mgrOptions = {
+              'chartArea': {
+                  'top': 0,
+                  'bottom': 0
+              },
+              'hAxis': {'minValue': 0},
+              'height': 500
+          };
+          let mgrChart = new google.visualization.BarChart(document.getElementById('chart_managers'));
+          mgrChart.draw(mgrTable, mgrOptions);
+
+          let pickTable = new google.visualization.DataTable();
+          pickTable.addColumn('string')
+          pickTable.addColumn('number', 'pre');
+          pickTable.addColumn('number', 'post');
+          pickTable.addColumn({'type': 'string', 'role': 'annotation'});
+          for (let i = 0; i < picksPre.length; i++) {
+              pickTable.addRows([[pickNames[i], picksPre[i], picksPost[i], keepers[i]]]);
+          }
+          let pickOptions = {
+              'chartArea': {
+                  'top': 0,
+                  'bottom': 0
+              },
+              'width': 1100,
+              'height': 7100
+          };
+          let pickChart = new google.visualization.BarChart(document.getElementById('chart_picks'));
+          pickChart.draw(pickTable, pickOptions);
+      }
+    </script>
+  </head>
+  <body>
+    <h1>Managers</h1>
+    <div id="chart_managers"></div>
+    <h1>Picks</h1>
+    <div id="chart_picks"></div>
+  </body>
+</html>

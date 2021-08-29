@@ -127,6 +127,7 @@ func Constants(gridders []*gridder, managers []*manager) *constants {
 }
 
 func iteratedProfiles(consts *constants) [][]action {
+	// TODO: Don't hardcode length.
 	profiles := [][]action{
 		{nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil},
 	}
@@ -143,6 +144,7 @@ func iteratedProfiles(consts *constants) [][]action {
 }
 
 func bestResponse(c *constants, mid managerid, actions []action) action {
+	// TODO: Rename actions to profile?
 	// Instead of copying here, there are other options we could
 	// investigate if performance is an issue.
 	newActions := make([]action, len(actions))
@@ -198,6 +200,14 @@ func utilityOne(c *constants, actions []action, mid1 managerid) float64 {
 	return result
 }
 
+func utilityAll(c *constants, actions []action) []float64 {
+	result := make([]float64, len(actions))
+	utilityAccum(c, actions, func(pick int, mid managerid, gid gridderid, _ bool) {
+		result[mid] += c.gridders[gid].value
+	})
+	return result
+}
+
 func utilityAccum(c *constants, actions []action, accum func(pick int, mid managerid, gid gridderid, iskeep bool)) {
 	next := 0
 	for pick, mid := range c.picks {
@@ -216,6 +226,26 @@ func utilityAccum(c *constants, actions []action, accum func(pick int, mid manag
 			next++
 		}
 	}
+}
+
+func pickValues(c *constants, actions []action) []float64 {
+	var result []float64
+	utilityAccum(c, actions, func(pick int, mid managerid, gid gridderid, _ bool) {
+		result = append(result, c.gridders[gid].value)
+	})
+	return result
+}
+
+func pickKeepers(c *constants, actions []action) []string {
+	var result []string
+	utilityAccum(c, actions, func(pick int, mid managerid, gid gridderid, iskeep bool) {
+		if iskeep {
+			result = append(result, c.gridders[gid].name)
+		} else {
+			result = append(result, "")
+		}
+	})
+	return result
 }
 
 // Note: Not currently used.
