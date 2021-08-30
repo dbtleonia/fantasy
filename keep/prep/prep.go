@@ -18,23 +18,25 @@ var (
 	//
 	// keeper_rounds.csv
 	//   field 0  = <manager>
-	//   field 1  = <player-name-canon>
+	//   field 1  = <player-canon>
 	//   field 2  = <round>
-	// raw3_projections.tsv  -- TSV, not CSV
-	//   field 1  = <player-name-format3>
+	// raw3_projections.tsv   -- TSV, not CSV
+	//   field 1  = <player-format3>
 	//   field 2  = $<value>
 	// raw3_extra_renames.csv
-	//   field 0  = <player-name-format3>
-	//   field 1  = <player-name-canon>
+	//   field 0  = <player-format3>
+	//   field 1  = <player-canon>
 	// raw3_extra_projections.csv
-	//   field 0  = <player-name-canon>
+	//   field 0  = <player-canon>
+	//   field 1  = <value>
+	//   field 2  = <stddev>  -- empty, future formats may use
 	//
 	// ===== Output under <data_dir> =====
 	//
 	// projections.csv
-	//   field 0  = <player-name-canon>
+	//   field 0  = <player-canon>
 	//   field 1  = <value>
-	//   field 2  = <stddev>  # empty, future formats may populate
+	//   field 2  = <stddev>  -- empty, future formats may use
 	//
 	dataDir = flag.String("data_dir", "", "directory for data files; empty string means $HOME/data")
 
