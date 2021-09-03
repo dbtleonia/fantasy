@@ -165,17 +165,21 @@ func main() {
 	}
 
 	// Read keeper_rounds and check constraints.
+	var problems []string
 	krecords := mustReadAll(path.Join(dir, "keeper_rounds.csv"))
 	for _, record := range krecords[1:] { // skip header
 		name := record[1]
 		_, ok1 := projections[name]
 		_, ok2 := extraProjections[name]
 		if !ok1 && !ok2 {
-			log.Fatalf("No projection for %q; add to extra renames or projections\n", name)
+			problems = append(problems, fmt.Sprintf("no projection for %q; add to extra renames or projections", name))
 		}
 		if ok1 && ok2 {
-			log.Fatalf("Multiple projections for %q; remove from extra projections\n", name)
+			problems = append(problems, fmt.Sprintf("multiple projections for %q; remove from extra projections", name))
 		}
+	}
+	if len(problems) > 0 {
+		log.Fatalf("Checks failed:\n  %s\n", strings.Join(problems, "\n  "))
 	}
 
 	// Write output file.
