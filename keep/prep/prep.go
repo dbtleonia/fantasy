@@ -158,7 +158,7 @@ func main() {
 			}
 		}
 
-		value := strings.TrimPrefix(record[2], "$")
+		value := strings.TrimPrefix(record[3], "$")
 
 		projections[player] = value
 		projectionsOrder = append(projectionsOrder, player)
