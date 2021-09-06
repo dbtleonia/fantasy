@@ -10,6 +10,10 @@ import (
 	"strings"
 )
 
+var (
+	dummy = flag.Int("dummy", 10, "number of dummy players to generate for each position")
+)
+
 func main() {
 	flag.Parse()
 	if flag.NArg() != 1 {
@@ -75,6 +79,26 @@ func main() {
 	}
 	if len(problems) > 0 {
 		log.Fatalf("Unknown positions:  \n  %s\n", strings.Join(problems, "\n  "))
+	}
+	for j, pos := range []string{"DST", "K", "QB", "RB", "TE", "WR"} {
+		for i := 0; i < *dummy; i++ {
+			poscount[pos]++
+			n := len(out)
+			out = append(out, []string{
+				"0",
+				strconv.Itoa(20000 + 10000*j + i), // id
+				fmt.Sprintf("%sdummy <%s> #%d", pos[:1], pos, i), // name
+				pos,                         // pos
+				"XXX",                       // team
+				"0",                         // value
+				"0",                         // points
+				strconv.Itoa(n + 1),         // rank
+				strconv.Itoa(poscount[pos]), // posrank
+				strconv.Itoa(n + 1),         // adp
+				"0",                         // ceiling
+				"",                          // bye
+			})
+		}
 	}
 	if err = csv.NewWriter(os.Stdout).WriteAll(out); err != nil {
 		log.Fatal(err)
