@@ -11,7 +11,8 @@ import (
 )
 
 var (
-	dummy = flag.Int("dummy", 10, "number of dummy players to generate for each position")
+	dummy   = flag.Int("dummy", 10, "number of dummy players to generate for each position")
+	keepers = flag.String("keepers", "", "keepers file named keepers-<nteams>.csv")
 )
 
 func main() {
@@ -22,10 +23,40 @@ func main() {
 		os.Exit(1)
 	}
 
+	keeperPicks := make(map[string]int) // player -> pick
+	if *keepers != "" {
+		k, err := os.Open(*keepers)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer k.Close()
+		records, err := csv.NewReader(k).ReadAll()
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, record := range records {
+			nteams, err := strconv.Atoi(strings.TrimSuffix(strings.Split(*keepers, "-")[1], ".csv"))
+			if err != nil {
+				log.Fatal(err)
+			}
+			parts := strings.Split(record[1], "-")
+			round, err := strconv.Atoi(parts[0])
+			if err != nil {
+				log.Fatal(err)
+			}
+			slot, err := strconv.Atoi(parts[1])
+			if err != nil {
+				log.Fatal(err)
+			}
+			keeperPicks[record[2]] = nteams*(round-1) + slot
+		}
+	}
+
 	f, err := os.Open(flag.Arg(0))
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer f.Close()
 	in := csv.NewReader(f)
 	in.Comma = '\t'
 	records, err := in.ReadAll()
@@ -63,11 +94,11 @@ func main() {
 
 		// TODO: Remove dummy values once sim/opt no longer need them.
 		out = append(out, []string{
-			"0",
-			strconv.Itoa(10000 + i), // id
-			record[colName],         // name
-			pos,                     // pos
-			"XXX",                   // team
+			strconv.Itoa(keeperPicks[record[colName]]), // pick
+			strconv.Itoa(10000 + i),                    // id
+			record[colName],                            // name
+			pos,                                        // pos
+			"XXX",                                      // team
 			strings.TrimPrefix(record[colValue], "$"), // value
 			record[colPoints],                         // points
 			strconv.Itoa(i + 1),                       // rank
