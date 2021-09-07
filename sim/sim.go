@@ -105,6 +105,6 @@ func main() {
 		}
 	}
 	for i, team := range state.Teams {
-		fmt.Printf("Team #%2d [%c] = %7.2f\n", i, strategyString[i], scorer.Score(team))
+		fmt.Printf("Team #%2d [%c] = %8.2f\n", i, strategyString[i], scorer.Score(team))
 	}
 }

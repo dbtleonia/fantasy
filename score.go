@@ -10,13 +10,14 @@ var (
 		'D': {0.2},
 		'K': {},
 		'Q': {},
-		'R': {0.5, 0.2, 0.1},
+		'R': {0.5, 0.2},
 		'T': {0.2},
-		'W': {0.5, 0.2, 0.1},
+		'W': {0.5, 0.2},
 	}
 )
 
 func (s *Scorer) Score(team *Team) float64 {
+	bye := make(map[byte]int)
 	start := make(map[byte]int)
 	bench := make(map[byte]int)
 	for _, ch := range s.Schema {
@@ -30,6 +31,7 @@ func (s *Scorer) Score(team *Team) float64 {
 		if start[ch] > 0 {
 			start[ch]--
 			result += player.Value
+			bye[ch] = player.Bye
 			continue
 		}
 		switch ch {
@@ -42,9 +44,11 @@ func (s *Scorer) Score(team *Team) float64 {
 		}
 		if s.Bench {
 			if bench[ch] < len(benchWeights[ch]) {
-				result += player.Value * benchWeights[ch][bench[ch]]
-				bench[ch]++
-				continue
+				if (ch != 'D' && ch != 'T') || player.Bye != bye[ch] {
+					result += player.Value*benchWeights[ch][bench[ch]] + 0.5
+					bench[ch]++
+					continue
+				}
 			}
 		}
 	}
