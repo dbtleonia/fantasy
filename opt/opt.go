@@ -82,6 +82,6 @@ func main() {
 	optimize := fantasy.NewOptimize(order, optStrategies, rules, scorer, *numTrials)
 
 	for _, c := range optimize.Candidates(state) {
-		fmt.Printf("%.2f %s\n", c.Value, c.Player)
+		fmt.Printf("%.2f %s\n", c.Score, c.Player)
 	}
 }
