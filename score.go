@@ -6,15 +6,6 @@ type Scorer struct {
 }
 
 var (
-	posMultiplier = map[byte]float64{
-		'Q': 0.893,
-		'R': 0.861,
-		'W': 0.799,
-		'T': 0.998, // was 0.848
-		'K': 0.162, // was 0.512
-		'D': 0.487,
-	}
-
 	benchWeights = map[byte][]float64{
 		'D': {0.2},
 		'K': {},
@@ -34,24 +25,24 @@ func (s *Scorer) Score(team *Team) float64 {
 		}
 	}
 	result := 0.0
-	for _, player := range team.PlayersByPoints() {
+	for _, player := range team.PlayersByValue() {
 		ch := player.Pos[0]
 		if start[ch] > 0 {
 			start[ch]--
-			result += player.Points * posMultiplier[ch]
+			result += player.Value
 			continue
 		}
 		switch ch {
-		case 'W', 'R', 'T':
+		case 'R':
 			if start['X'] > 0 {
 				start['X']--
-				result += player.Points * posMultiplier[ch]
+				result += player.Value
 				continue
 			}
 		}
 		if s.Bench {
 			if bench[ch] < len(benchWeights[ch]) {
-				result += player.Points * benchWeights[ch][bench[ch]] * posMultiplier[ch]
+				result += player.Value * benchWeights[ch][bench[ch]]
 				bench[ch]++
 				continue
 			}

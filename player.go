@@ -15,14 +15,11 @@ type Player struct {
 	ID      int
 	Name    string
 	Team    string
-	VOR     float64
+	Value   float64
 	Pos     string // QB RB WR TE K DST
-	Points  float64
 	Rank    int
 	PosRank int
 	ADP     float64
-	Ceiling float64
-	Bye     int
 }
 
 type ByPick []*Player
@@ -31,11 +28,11 @@ func (x ByPick) Len() int           { return len(x) }
 func (x ByPick) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 func (x ByPick) Less(i, j int) bool { return x[i].Pick < x[j].Pick }
 
-type ByVOR []*Player
+type ByValue []*Player
 
-func (x ByVOR) Len() int           { return len(x) }
-func (x ByVOR) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
-func (x ByVOR) Less(i, j int) bool { return x[i].VOR < x[j].VOR }
+func (x ByValue) Len() int           { return len(x) }
+func (x ByValue) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
+func (x ByValue) Less(i, j int) bool { return x[i].Value < x[j].Value }
 
 type ByADP []*Player
 
@@ -45,7 +42,7 @@ func (x ByADP) Less(i, j int) bool { return x[i].ADP < x[j].ADP }
 
 func (p *Player) String() string {
 	// TODO: Don't hardcode %-25s.
-	return fmt.Sprintf("%3d %07d %3d %5.1f %2d %3s %3d %8.4f %8.4f %9.4f %-3s %-25s # %s", p.Pick, p.ID, p.Rank, p.ADP, p.Bye, p.Pos, p.PosRank, p.Points, p.Ceiling, p.VOR, p.Team, p.Name, p.Justification)
+	return fmt.Sprintf("%3d %07d %3d %5.1f %3s %3d %6.2f %-3s %-25s # %s", p.Pick, p.ID, p.Rank, p.ADP, p.Pos, p.PosRank, p.Value, p.Team, p.Name, p.Justification)
 }
 
 func ReadPlayers(filename string) ([]*Player, error) {
@@ -55,13 +52,10 @@ func ReadPlayers(filename string) ([]*Player, error) {
 		colName    = 2
 		colPos     = 3
 		colTeam    = 4
-		colVOR     = 5
-		colPoints  = 6
+		colValue   = 5
 		colRank    = 7
 		colPosRank = 8
 		colADP     = 9
-		colCeiling = 10
-		colBye     = 11
 	)
 	f, err := os.Open(filename)
 	if err != nil {
@@ -85,11 +79,7 @@ func ReadPlayers(filename string) ([]*Player, error) {
 		if err != nil {
 			return nil, err
 		}
-		vor, err := strconv.ParseFloat(record[colVOR], 64)
-		if err != nil {
-			return nil, err
-		}
-		points, err := strconv.ParseFloat(record[colPoints], 64)
+		value, err := strconv.ParseFloat(record[colValue], 64)
 		if err != nil {
 			return nil, err
 		}
@@ -105,30 +95,16 @@ func ReadPlayers(filename string) ([]*Player, error) {
 		if err != nil {
 			return nil, err
 		}
-		ceiling, err := strconv.ParseFloat(record[colCeiling], 64)
-		if err != nil {
-			return nil, err
-		}
-		var bye int
-		if record[colBye] != "" {
-			bye, err = strconv.Atoi(record[colBye])
-			if err != nil {
-				return nil, err
-			}
-		}
 		players = append(players, &Player{
 			Pick:    pick,
 			ID:      id,
 			Name:    record[colName],
 			Team:    record[colTeam],
-			VOR:     vor,
+			Value:   value,
 			Pos:     record[colPos],
-			Points:  points,
 			Rank:    rank,
 			PosRank: posRank,
 			ADP:     adp,
-			Ceiling: ceiling,
-			Bye:     bye,
 		})
 	}
 	return players, nil

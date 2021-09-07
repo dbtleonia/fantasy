@@ -99,12 +99,12 @@ func main() {
 	fantasy.RunDraft(state, order, strategies)
 
 	for i, team := range state.Teams {
-		fmt.Printf("Team #%d [%c] = %f\n", i, strategyString[i], scorer.Score(team))
+		fmt.Printf("Team #%d [%c] = %.2f\n", i, strategyString[i], scorer.Score(team))
 		for _, player := range team.PlayersByPick() {
 			fmt.Printf("  %s\n", player)
 		}
 	}
 	for i, team := range state.Teams {
-		fmt.Printf("Team #%d [%c] = %f\n", i, strategyString[i], scorer.Score(team))
+		fmt.Printf("Team #%2d [%c] = %7.2f\n", i, strategyString[i], scorer.Score(team))
 	}
 }
