@@ -31,13 +31,14 @@ def read_draft(indir):
         manager = drow.table.thead.tr.th.get_text()
         for prow in drow.table.tbody.find_all('tr'):
             td = prow.find('td', {'class': 'player'})
+            pick = int(prow.find('td', {'class': 'pick'}).get_text().lstrip('(').rstrip(')'))
             playerid = td.a['href'][29:].rstrip('/')
             result[playerid] = {
-                'round': int(prow.find('td', {'class': 'first'}).get_text().rstrip('.')),
+                'round': pick // 12 + 1,
                 'kept': td.span is not None,
                 # These fields are just for debugging:
                 'manager': manager,
-                'pick': int(prow.find('td', {'class': 'pick'}).get_text().lstrip('(').rstrip(')')),
+                'pick': pick,
                 'player': td.a.get_text(),
             }
     return result
@@ -122,7 +123,7 @@ def main(args):
 
     os.makedirs(os.path.join(data_dir, 'toimport', 'options'), exist_ok=True)
     admin_csv = csv.writer(open(os.path.join(data_dir, 'toimport', 'admin.csv'), 'w'))
-    admin_csv.writerow(['manager', 'player', 'playerid', 'dround', 'kept', 'dropt', 'kround'])
+    admin_csv.writerow(['manager', 'player', 'playerid', 'kround', 'dround', 'kept', 'dropt'])
 
     for manager_name, group in itertools.groupby(result, lambda r: r[0]):
         manager_csv = csv.writer(open(os.path.join(data_dir, 'toimport', 'options', manager_name), 'w'))
@@ -132,7 +133,7 @@ def main(args):
             if kround == 99:
                 kround = 'n/a'
             manager_csv.writerow([player, playerid, kround])
-            admin_csv.writerow([manager_name, player, playerid, dround, k, d, kround])
+            admin_csv.writerow([manager_name, player, playerid, kround, dround, k, d])
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
