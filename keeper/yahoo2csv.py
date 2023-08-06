@@ -104,7 +104,15 @@ def compute_keeper_round(playerid, draft_round,
         else:
             return (9, 'undrafted')
     if dropped1:
-        return (min(16, draft_round + 2), 'dropped')
+        # If the player would have been unkeepable but was dropped,
+        # flag for manual check.
+        if ((kept1 and kept2 and kept3 and
+             not dropped2 and not dropped3 and
+             not 'teams' in playerid) or
+            draft_round == 1):
+            return (min(16, draft_round + 2), 'dropped/saquon')
+        else:
+            return (min(16, draft_round + 2), 'dropped')
     if not kept1:
         return (draft_round, '')
     if draft_round > 1:
