@@ -81,6 +81,12 @@ var (
 )
 
 func translateName(playerRaw string) (string, error) {
+	// Did not include team in player name.
+	if true {
+		n := strings.Index(playerRaw, "(")
+		return playerRaw[:n-1], nil
+	}
+
 	// Remove extra chars to the right of ')'.
 	playerRaw = strings.TrimRightFunc(playerRaw, unicode.IsLetter)
 
@@ -158,7 +164,7 @@ func main() {
 			}
 		}
 
-		value := strings.TrimPrefix(record[3], "$")
+		value := strings.TrimPrefix(record[2], "$")
 
 		projections[player] = value
 		projectionsOrder = append(projectionsOrder, player)
