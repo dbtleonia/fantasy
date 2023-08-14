@@ -53,6 +53,12 @@ type constants struct {
 	picks       []managerid // includes picks acquired via trade
 	gidsByValue []gridderid
 	combos      [][]int
+
+	// Only when doing reveal.
+	// TODO: Possibly move into a separate type.
+	// TODO: Validate actions on input.
+	ideal  []action
+	actual []action
 }
 
 type keep struct {
@@ -80,7 +86,7 @@ func (a action) hasGID(gid gridderid) bool {
 	return false
 }
 
-func Constants(gridders []*gridder, managers []*manager, picks []managerid, picksViaTrade []bool) *constants {
+func Constants(gridders []*gridder, managers []*manager, picks []managerid, picksViaTrade []bool, ideal, actual []action) *constants {
 	// Index gridder picks in descending order.
 	managerPicks := make([][]int, len(managers))
 	for j := len(picks) - 1; j >= 0; j-- {
@@ -113,7 +119,7 @@ func Constants(gridders []*gridder, managers []*manager, picks []managerid, pick
 		combos = append(combos, combin.Combinations(numRounds, k)...)
 	}
 
-	return &constants{managers, gridders, picks, gidsByValue, combos}
+	return &constants{managers, gridders, picks, gidsByValue, combos, ideal, actual}
 }
 
 func iteratedProfiles(consts *constants) [][]action {
