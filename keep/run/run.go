@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	charts  = flag.Bool("charts", true, "output HTML with charts of results")
+	charts  = flag.Bool("charts", false, "output HTML with charts of results")
 	dataDir = flag.String("data_dir", "", "directory for data files; empty string means $HOME/data")
 )
 
@@ -96,7 +96,10 @@ func ReadConstants(dataDir string) (*constants, error) {
 	for _, record := range krecords[1:] { // skip header
 		managerName := record[0]
 		playerName := record[1]
-		round, err := strconv.Atoi(record[2])
+		if record[6] == "n/a" {
+			continue
+		}
+		round, err := strconv.Atoi(record[6])
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -115,7 +118,41 @@ func ReadConstants(dataDir string) (*constants, error) {
 		gridders[gid].round = round
 	}
 
-	return Constants(gridders, managers), nil
+	o, err := os.Open(path.Join(dataDir, "draft_order.csv"))
+	if err != nil {
+		return nil, err
+	}
+	defer o.Close()
+
+	orecords, err := csv.NewReader(o).ReadAll()
+	if err != nil {
+		return nil, err
+	}
+
+	var picks []managerid
+	var picksViaTrade []bool
+	for _, record := range orecords[1:] { // skip header
+		pick, err := strconv.Atoi(record[0])
+		if err != nil {
+			log.Fatal(err)
+		}
+		managerName := record[1]
+		viaTrade := strings.TrimSpace(record[2]) != ""
+
+		if pick != len(picks)+1 {
+			log.Fatal("Out of order pick: %d\n", pick)
+		}
+
+		mid, ok := mids[managerName]
+		if !ok {
+			log.Fatalf("No manager with name %q", managerName)
+		}
+
+		picks = append(picks, mid)
+		picksViaTrade = append(picksViaTrade, viaTrade)
+	}
+
+	return Constants(gridders, managers, picks, picksViaTrade), nil
 }
 
 func main() {

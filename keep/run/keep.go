@@ -1,8 +1,9 @@
 package main
 
 import (
-	"math"
 	"sort"
+
+	"gonum.org/v1/gonum/stat/combin"
 )
 
 type gridderid int
@@ -13,7 +14,10 @@ type gridder struct {
 	value float64
 	mid   managerid // -1 if unowned
 	round int       //  0 if unowned
-	picks []int     // allowed picks in descending order
+
+	// Allowed picks in descending order. Does not include picks
+	// acquired via trade, which are not allowed to be used for keeping.
+	picks []int
 }
 
 type byGridderValue struct {
@@ -46,8 +50,9 @@ type manager struct {
 type constants struct {
 	managers    []*manager
 	gridders    []*gridder
-	picks       []managerid
+	picks       []managerid // includes picks acquired via trade
 	gidsByValue []gridderid
+	combos      [][]int
 }
 
 type keep struct {
@@ -75,35 +80,13 @@ func (a action) hasGID(gid gridderid) bool {
 	return false
 }
 
-func Constants(gridders []*gridder, managers []*manager) *constants {
-	var maxRound int
-	for _, gridder := range gridders {
-		if gridder.round > maxRound {
-			maxRound = gridder.round
-		}
-	}
-
-	// Set up picks.  Assume picks are snake draft in alphabetical order
-	// of manager names.
-	order := make([]managerid, len(managers))
-	for m := 0; m < len(managers); m++ {
-		order[m] = managerid(m)
-	}
-	sort.Sort(byManagerName{order, managers})
-
-	var picks []managerid
-	for i := 0; i < (maxRound+1)/2; i++ {
-		for _, mid := range order {
-			picks = append(picks, mid)
-		}
-		for j := len(order) - 1; j >= 0; j-- {
-			picks = append(picks, order[j])
-		}
-	}
-
+func Constants(gridders []*gridder, managers []*manager, picks []managerid, picksViaTrade []bool) *constants {
 	// Index gridder picks in descending order.
 	managerPicks := make([][]int, len(managers))
 	for j := len(picks) - 1; j >= 0; j-- {
+		if picksViaTrade[j] {
+			continue
+		}
 		mid := managerid(picks[j])
 		managerPicks[mid] = append(managerPicks[mid], j)
 	}
@@ -123,7 +106,14 @@ func Constants(gridders []*gridder, managers []*manager) *constants {
 	}
 	sort.Sort(byGridderValue{gidsByValue, gridders})
 
-	return &constants{managers, gridders, picks, gidsByValue}
+	const maxKeepers = 3
+	numRounds := len(picks) / len(managers)
+	var combos [][]int
+	for k := 0; k <= maxKeepers; k++ {
+		combos = append(combos, combin.Combinations(numRounds, k)...)
+	}
+
+	return &constants{managers, gridders, picks, gidsByValue, combos}
 }
 
 func iteratedProfiles(consts *constants) [][]action {
@@ -143,8 +133,14 @@ func iteratedProfiles(consts *constants) [][]action {
 	return profiles[1:]
 }
 
-func bestResponse(c *constants, mid managerid, actions []action) action {
-	// TODO: Rename actions to profile?
+type actionUtility struct {
+	act     action
+	utility float64
+}
+
+func allResponses(c *constants, mid managerid, actions []action) []*actionUtility {
+	var result []*actionUtility
+
 	// Instead of copying here, there are other options we could
 	// investigate if performance is an issue.
 	newActions := make([]action, len(actions))
@@ -153,16 +149,16 @@ func bestResponse(c *constants, mid managerid, actions []action) action {
 			newActions[i] = a
 		}
 	}
-	prevU := utilityOne(c, newActions, mid)
-	var response action
-	for k := 0; k < 3; k++ {
-		bestU := math.Inf(-1)
-		bestPick := 0
-		bestGid := gridderid(0)
-		for _, gid := range c.managers[mid].gids {
-			if response.hasGID(gid) {
-				continue
+
+next_combo:
+	for _, combo := range c.combos {
+		response := action{}
+		for _, index := range combo {
+			if index >= len(c.managers[mid].gids) {
+				continue next_combo
 			}
+			gid := c.managers[mid].gids[index]
+
 			allowedPick := -1
 			for _, pick := range c.gridders[gid].picks {
 				if _, ok := response.findPick(pick); !ok {
@@ -171,23 +167,27 @@ func bestResponse(c *constants, mid managerid, actions []action) action {
 				}
 			}
 			if allowedPick == -1 {
-				continue
+				continue next_combo
 			}
-			newActions[mid] = append(action{{allowedPick, gid}}, response...)
-			u := utilityOne(c, newActions, mid)
-			if u > bestU {
-				bestU = u
-				bestPick = allowedPick
-				bestGid = gid
-			}
+			response = append(response, &keep{allowedPick, gid})
 		}
-		if bestU < prevU {
-			break
-		}
-		response = append(response, &keep{bestPick, bestGid})
-		prevU = bestU
+		newActions[mid] = response
+		u := utilityOne(c, newActions, mid)
+		result = append(result, &actionUtility{response, u})
 	}
-	return response
+
+	return result
+}
+
+func bestResponse(c *constants, mid managerid, actions []action) action {
+	responses := allResponses(c, mid, actions)
+	bestI := 0
+	for i := 1; i < len(responses); i++ {
+		if responses[i].utility > responses[bestI].utility {
+			bestI = i
+		}
+	}
+	return responses[bestI].act
 }
 
 func utilityOne(c *constants, actions []action, mid1 managerid) float64 {
