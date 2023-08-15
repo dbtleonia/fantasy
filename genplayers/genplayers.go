@@ -65,9 +65,8 @@ func main() {
 	}
 
 	const (
-		colName   = 1
-		colPoints = 2
-		colValue  = 3
+		colName  = 1
+		colValue = 2
 	)
 	var out [][]string
 	var problems []string
@@ -100,10 +99,10 @@ func main() {
 			pos,                                        // pos
 			"XXX",                                      // team
 			strings.TrimPrefix(record[colValue], "$"), // value
-			record[colPoints],                         // points
-			strconv.Itoa(i + 1),                       // rank
-			strconv.Itoa(poscount[pos]),               // posrank
-			strconv.Itoa(i + 1),                       // adp
+			"999",                       // points
+			strconv.Itoa(i + 1),         // rank
+			strconv.Itoa(poscount[pos]), // posrank
+			strconv.Itoa(i + 1),         // adp
 			strings.TrimPrefix(record[colValue], "$"), // ceiling
 			"", // bye
 		})

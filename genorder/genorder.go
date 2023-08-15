@@ -25,9 +25,6 @@ func main() {
 	for round := 0; round < numRounds; round++ {
 		for i := 0; i < numTeams; i++ {
 			t := i
-			if round%2 == 1 {
-				t = numTeams - i - 1
-			}
 			out.Write([]string{
 				strconv.Itoa(pick),
 				fmt.Sprintf("(Round %d #%d)", round, i),
