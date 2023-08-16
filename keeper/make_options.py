@@ -2,6 +2,7 @@
 
 import argparse
 import bs4
+import collections
 import csv
 import email
 import itertools
@@ -135,7 +136,16 @@ def main(args):
     for p in rosters:
         manager_name = manager_names[p['manager']]
         playerid = p['playerid']
-        player = p['player']
+        if playerid == 'teams/la-chargers':
+            player = 'Los Angeles Chargers'
+        elif playerid == 'teams/la-rams':
+            player = 'Los Angeles Rams'
+        elif playerid == 'teams/ny-giants':
+            player = 'New York Giants'
+        elif playerid == 'teams/ny-jets':
+            player = 'New York Jets'
+        else:
+            player = p['player']
         draft_round = draft[args.year-1][playerid]['round'] if playerid in draft[args.year-1] else None
         kept1 = playerid in draft[args.year-1] and draft[args.year-1][playerid]['kept']
         kept2 = playerid in draft[args.year-2] and draft[args.year-2][playerid]['kept']
@@ -162,6 +172,10 @@ def main(args):
             f'D{(args.year-2) % 100}' if dropped2 else '',
             f'D{(args.year-3) % 100}' if dropped3 else '',
         ])
+
+    for player, n in collections.Counter(p[3] for p in result).items():
+        if n > 1:
+            sys.exit(f'*** ERROR *** Duplicate name: {player}')
 
     result.sort()
 
