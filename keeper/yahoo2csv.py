@@ -120,7 +120,7 @@ def compute_keeper_round(playerid, draft_round,
     return (UNKEEPABLE, 'drafted rd 1')
 
 def main(args):
-    data_dir = args.data or os.path.join(os.getenv('HOME'), 'keeperdata')
+    data_dir = args.data or os.path.join(os.getenv('HOME'), 'data')
     yahoo = os.path.join(data_dir, 'yahoo')
 
     manager_names = read_managers(os.path.join(yahoo, str(args.year-1)))
@@ -165,9 +165,9 @@ def main(args):
 
     result.sort()
 
-    toimport = os.path.join(data_dir, 'toimport', str(args.year))
-    os.makedirs(os.path.join(toimport, 'options'), exist_ok=True)
-    admin_csv = csv.writer(open(os.path.join(toimport, 'admin.csv'), 'w'))
+    d = os.path.join(data_dir, 'out', str(args.year))
+    os.makedirs(d, exist_ok=True)
+    admin_csv = csv.writer(open(os.path.join(d, 'keeper_options.csv'), 'w'))
     admin_csv.writerow([
         'Manager',
         'Player',
@@ -183,13 +183,9 @@ def main(args):
         f'Dropped {(args.year-3) % 100}',
     ])
     for manager_name, group in itertools.groupby(result, lambda r: r[0]):
-        manager_csv = csv.writer(open(os.path.join(toimport, 'options', manager_name), 'w'))
-        manager_csv.writerow(['Player', 'Player ID', 'Keeper Round'])
-
         for _, keeper_round, reason, player, playerid, draft_round, k1, k2, k3, d1, d2, d3, in group:
             if keeper_round == UNKEEPABLE:
                 keeper_round = 'n/a'
-            manager_csv.writerow([player, playerid, keeper_round])
             admin_csv.writerow([
                 manager_name,
                 player,
@@ -208,6 +204,6 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('year', type=int, help='the year to generate files for')
-    parser.add_argument('--data', help='directory for data files, defaults to $HOME/kdata')
+    parser.add_argument('--data', help='directory for data files, defaults to $HOME/data')
     args = parser.parse_args()
     main(args)
