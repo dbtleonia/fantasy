@@ -56,7 +56,7 @@ func ord(n int) string {
 }
 
 func ReadConstants(dataDir string) (*constants, error) {
-	g, err := os.Open(path.Join(dataDir, "projections.csv"))
+	g, err := os.Open(path.Join(dataDir, "player_values.csv"))
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func ReadConstants(dataDir string) (*constants, error) {
 		})
 	}
 
-	k, err := os.Open(path.Join(dataDir, "keeper_rounds.csv"))
+	k, err := os.Open(path.Join(dataDir, "keeper_options.csv"))
 	if err != nil {
 		return nil, err
 	}
@@ -101,8 +101,8 @@ func ReadConstants(dataDir string) (*constants, error) {
 		playerName := record[1]
 
 		round := 0
-		if record[6] != "n/a" {
-			round, err = strconv.Atoi(record[6])
+		if record[3] != "n/a" {
+			round, err = strconv.Atoi(record[3])
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -156,76 +156,79 @@ func ReadConstants(dataDir string) (*constants, error) {
 		picksViaTrade = append(picksViaTrade, viaTrade)
 	}
 
-	id, err := os.Open(path.Join(dataDir, "keeper_ideal.csv"))
-	if err != nil {
-		return nil, err
-	}
-	defer id.Close()
-
-	idrecords, err := csv.NewReader(id).ReadAll()
-	if err != nil {
-		return nil, err
-	}
-
+	// Only for reveal mode.
 	ideal := make([]action, len(mids))
-	for _, record := range idrecords[1:] { // skip header
-		managerName := record[0]
-		gridderName := record[1]
-		roundPick := record[2]
-
-		mid, ok := mids[managerName]
-		if !ok {
-			log.Fatalf("No manager with name %q", managerName)
-		}
-
-		gid, ok := gids[gridderName]
-		if !ok {
-			log.Fatal("No gridder with name %q", gridderName)
-		}
-
-		dash := strings.Index(roundPick, "-")
-		pick, err := strconv.Atoi(roundPick[dash+1:])
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		ideal[mid] = append(ideal[mid], &keep{pick - 1, gid})
-	}
-
-	a, err := os.Open(path.Join(dataDir, "keeper_selections.csv"))
-	if err != nil {
-		return nil, err
-	}
-	defer a.Close()
-
-	arecords, err := csv.NewReader(a).ReadAll()
-	if err != nil {
-		return nil, err
-	}
-
 	actual := make([]action, len(mids))
-	for _, record := range arecords[1:] { // skip header
-		managerName := record[0]
-		gridderName := record[1]
-		roundPick := record[2]
-
-		mid, ok := mids[managerName]
-		if !ok {
-			log.Fatalf("No manager with name %q", managerName)
-		}
-
-		gid, ok := gids[gridderName]
-		if !ok {
-			log.Fatal("No gridder with name %q", gridderName)
-		}
-
-		dash := strings.Index(roundPick, "-")
-		pick, err := strconv.Atoi(roundPick[dash+1:])
+	if *reveal {
+		id, err := os.Open(path.Join(dataDir, "keeper_ideal.csv"))
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
+		}
+		defer id.Close()
+
+		idrecords, err := csv.NewReader(id).ReadAll()
+		if err != nil {
+			return nil, err
 		}
 
-		actual[mid] = append(actual[mid], &keep{pick - 1, gid})
+		for _, record := range idrecords[1:] { // skip header
+			managerName := record[0]
+			gridderName := record[1]
+			roundPick := record[2]
+
+			mid, ok := mids[managerName]
+			if !ok {
+				log.Fatalf("No manager with name %q", managerName)
+			}
+
+			gid, ok := gids[gridderName]
+			if !ok {
+				log.Fatal("No gridder with name %q", gridderName)
+			}
+
+			dash := strings.Index(roundPick, "-")
+			pick, err := strconv.Atoi(roundPick[dash+1:])
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			ideal[mid] = append(ideal[mid], &keep{pick - 1, gid})
+		}
+
+		a, err := os.Open(path.Join(dataDir, "keeper_selections.csv"))
+		if err != nil {
+			return nil, err
+		}
+		defer a.Close()
+
+		arecords, err := csv.NewReader(a).ReadAll()
+		if err != nil {
+			return nil, err
+		}
+
+		for _, record := range arecords[1:] { // skip header
+			managerName := record[0]
+			gridderName := record[1]
+			roundPick := record[2]
+
+			mid, ok := mids[managerName]
+			if !ok {
+				log.Fatalf("No manager with name %q", managerName)
+			}
+
+			gid, ok := gids[gridderName]
+			if !ok {
+				log.Fatal("No gridder with name %q", gridderName)
+			}
+
+			dash := strings.Index(roundPick, "-")
+			pick, err := strconv.Atoi(roundPick[dash+1:])
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			actual[mid] = append(actual[mid], &keep{pick - 1, gid})
+		}
 	}
 
 	return Constants(gridders, managers, picks, picksViaTrade, ideal, actual), nil
@@ -235,6 +238,11 @@ func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
+	if flag.NArg() != 1 {
+		log.Fatal("year please")
+	}
+	year := flag.Arg(0)
+
 	dir := *dataDir
 	if dir == "" {
 		if home := os.Getenv("HOME"); home != "" {
@@ -242,7 +250,7 @@ func main() {
 		}
 	}
 
-	consts, err := ReadConstants(dir)
+	consts, err := ReadConstants(path.Join(dir, "out", year))
 	if err != nil {
 		log.Fatal(err)
 	}
