@@ -4,7 +4,6 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
-	"html/template"
 	"log"
 	"math"
 	"os"
@@ -16,7 +15,6 @@ import (
 
 var (
 	reveal  = flag.Bool("reveal", true, "make report for reveal")
-	charts  = flag.Bool("charts", false, "output HTML with charts of results")
 	dataDir = flag.String("data_dir", "", "directory for data files; empty string means $HOME/data")
 )
 
@@ -55,41 +53,6 @@ func ord(n int) string {
 		return "3rd"
 	}
 	return fmt.Sprintf("%dth", n)
-}
-
-func printCharts(c *constants, profile []action) {
-	nokeep := make([]action, len(profile))
-
-	// TODO: Translate to short manager names.
-	managerNames := make([]string, len(c.managers))
-	for i, m := range c.managers {
-		managerNames[i] = m.name[:9]
-	}
-	managersPre := utilityAll(c, nokeep)
-	managersPost := utilityAll(c, profile)
-
-	var pickNames []string
-	utilityAccum(c, nokeep, func(pick int, mid managerid, gid gridderid, iskeep bool) {
-		round := pick/len(profile) + 1
-		pickNames = append(pickNames, fmt.Sprintf("%s %d-%d", managerNames[mid], round, pick+1))
-	})
-	picksPre := pickValues(c, nokeep)
-	picksPost := pickValues(c, profile)
-	keepers := pickKeepers(c, profile)
-
-	tmpl := template.Must(template.ParseFiles("tmpl.html"))
-	data := map[string]interface{}{
-		"managerNames": managerNames,
-		"managersPre":  managersPre,
-		"managersPost": managersPost,
-		"pickNames":    pickNames,
-		"picksPre":     picksPre,
-		"picksPost":    picksPost,
-		"keepers":      keepers,
-	}
-	if err := tmpl.Execute(os.Stdout, data); err != nil {
-		log.Fatal(err)
-	}
 }
 
 func ReadConstants(dataDir string) (*constants, error) {
@@ -397,12 +360,6 @@ func main() {
 	}
 
 	profiles := iteratedProfiles(consts)
-
-	// TODO: Pull this out into a separate command.
-	if *charts {
-		printCharts(consts, profiles[len(profiles)-1])
-		return
-	}
 
 	// Output the results.  This currently loops through the entire
 	// response for each gridder.  We could make it more efficient if
