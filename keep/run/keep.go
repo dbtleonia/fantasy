@@ -86,7 +86,7 @@ func (a action) hasGID(gid gridderid) bool {
 	return false
 }
 
-func Constants(gridders []*gridder, managers []*manager, picks []managerid, picksViaTrade []bool, ideal, actual []action) *constants {
+func newConstants(gridders []*gridder, managers []*manager, picks []managerid, picksViaTrade []bool, ideal, actual []action) *constants {
 	// Index gridder picks in descending order.
 	managerPicks := make([][]int, len(managers))
 	for j := len(picks) - 1; j >= 0; j-- {
@@ -122,7 +122,7 @@ func Constants(gridders []*gridder, managers []*manager, picks []managerid, pick
 	return &constants{managers, gridders, picks, gidsByValue, combos, ideal, actual}
 }
 
-func iteratedProfiles(consts *constants) [][]action {
+func iteratedBestResponse(consts *constants) [][]action {
 	// TODO: Don't hardcode length.
 	profiles := [][]action{
 		{nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil},

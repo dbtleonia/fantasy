@@ -231,7 +231,7 @@ func ReadConstants(dataDir string) (*constants, error) {
 		}
 	}
 
-	return Constants(gridders, managers, picks, picksViaTrade, ideal, actual), nil
+	return newConstants(gridders, managers, picks, picksViaTrade, ideal, actual), nil
 }
 
 func main() {
@@ -367,7 +367,7 @@ func main() {
 		return
 	}
 
-	profiles := iteratedProfiles(consts)
+	profiles := iteratedBestResponse(consts)
 
 	// Output the results.  This currently loops through the entire
 	// response for each gridder.  We could make it more efficient if
