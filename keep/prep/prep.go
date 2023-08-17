@@ -16,27 +16,23 @@ import (
 var (
 	// ===== Inputs under <data_dir> =====
 	//
-	// keeper_rounds.csv
-	//   field 0  = <manager>
+	// out/<year>/keeper_options.csv
 	//   field 1  = <player-canon>
-	//   field 2  = <round>
-	// raw3_projections.tsv   -- TSV, not CSV
-	//   field 1  = <player-format3>
+	// fantasypros/<year>/raw_player_values.tsv   -- TSV, not CSV
+	//   field 1  = <player-raw>
 	//   field 2  = $<value>
-	// raw3_extra_renames.csv
-	//   field 0  = <player-format3>
+	// fantasypros/<year>/extra_renames.csv
+	//   field 0  = <player-raw>
 	//   field 1  = <player-canon>
-	// raw3_extra_projections.csv
+	// fantasypros/<year>/extra_player_values.csv
 	//   field 0  = <player-canon>
 	//   field 1  = <value>
-	//   field 2  = <stddev>  -- empty, future formats may use
 	//
 	// ===== Output under <data_dir> =====
 	//
-	// projections.csv
+	// out/<year>/player_values.csv
 	//   field 0  = <player-canon>
 	//   field 1  = <value>
-	//   field 2  = <stddev>  -- empty, future formats may use
 	//
 	dataDir = flag.String("data_dir", "", "directory for data files; empty string means $HOME/data")
 
@@ -126,6 +122,11 @@ func mustReadAll(filename string) [][]string {
 func main() {
 	flag.Parse()
 
+	if flag.NArg() != 1 {
+		log.Fatal("year please")
+	}
+	year := flag.Arg(0)
+
 	dir := *dataDir
 	if dir == "" {
 		if home := os.Getenv("HOME"); home != "" {
@@ -135,22 +136,22 @@ func main() {
 
 	// Read extra renames.
 	extraRenames := make(map[string]string)
-	for _, record := range mustReadAll(path.Join(dir, "raw3_extra_renames.csv")) {
+	for _, record := range mustReadAll(path.Join(dir, "fantasypros", year, "extra_renames.csv")) {
 		extraRenames[record[0]] = record[1]
 	}
 
-	// Read extra projections.
+	// Read extra player values.
 	extraProjections := make(map[string]string) // player -> value
 	extraProjectionsOrder := []string{}
-	for _, record := range mustReadAll(path.Join(dir, "raw3_extra_projections.csv")) {
+	for _, record := range mustReadAll(path.Join(dir, "fantasypros", year, "extra_player_values.csv")) {
 		extraProjections[record[0]] = record[1]
 		extraProjectionsOrder = append(extraProjectionsOrder, record[0])
 	}
 
-	// Read raw projections.
+	// Read raw player values.
 	projections := make(map[string]string) // player -> value
 	projectionsOrder := []string{}
-	for _, record := range mustReadAll(path.Join(dir, "raw3_projections.tsv")) {
+	for _, record := range mustReadAll(path.Join(dir, "fantasypros", year, "raw_player_values.tsv")) {
 		playerRaw := record[1]
 
 		var player string
@@ -170,18 +171,18 @@ func main() {
 		projectionsOrder = append(projectionsOrder, player)
 	}
 
-	// Read keeper_rounds and check constraints.
+	// Read keeper_options and check constraints.
 	var problems []string
-	krecords := mustReadAll(path.Join(dir, "keeper_rounds.csv"))
+	krecords := mustReadAll(path.Join(dir, "out", year, "keeper_options.csv"))
 	for _, record := range krecords[1:] { // skip header
 		name := record[1]
 		_, ok1 := projections[name]
 		_, ok2 := extraProjections[name]
 		if !ok1 && !ok2 {
-			problems = append(problems, fmt.Sprintf("no projection for %q; add to extra renames or projections", name))
+			problems = append(problems, fmt.Sprintf("no value for %q; add to extra_renames.csv or extra_player_values.csv", name))
 		}
 		if ok1 && ok2 {
-			problems = append(problems, fmt.Sprintf("multiple projections for %q; remove from extra projections", name))
+			problems = append(problems, fmt.Sprintf("multiple values for %q; remove from extra_player_values.csv", name))
 		}
 	}
 	if len(problems) > 0 {
@@ -189,14 +190,14 @@ func main() {
 	}
 
 	// Write output file.
-	out := [][]string{{"player", "value", "stddev"}}
+	out := [][]string{{"player", "value"}}
 	for _, name := range projectionsOrder {
-		out = append(out, []string{name, projections[name], ""})
+		out = append(out, []string{name, projections[name]})
 	}
 	for _, name := range extraProjectionsOrder {
-		out = append(out, []string{name, extraProjections[name], ""})
+		out = append(out, []string{name, extraProjections[name]})
 	}
-	f, err := os.Create(path.Join(dir, "projections.csv"))
+	f, err := os.Create(path.Join(dir, "out", year, "player_values.csv"))
 	if err != nil {
 		log.Fatal(err)
 	}
