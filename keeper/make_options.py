@@ -118,7 +118,7 @@ def compute_keeper_round(playerid, draft_round,
         return (draft_round, '')
     if draft_round > 1:
         return (draft_round - 1, 'kept')
-    return (UNKEEPABLE, 'drafted rd 1')
+    return (UNKEEPABLE, 'kept round 1')
 
 def main(args):
     data_dir = args.data or os.path.join(os.getenv('HOME'), 'data')
@@ -189,12 +189,12 @@ def main(args):
         f'Keeper round {args.year % 100}',
         f'Draft round {(args.year-1) % 100}',
         'Reason',
-        f'Kept {(args.year-1) % 100}',
         f'Dropped {(args.year-1) % 100}',
-        f'Kept {(args.year-2) % 100}',
+        f'Kept {(args.year-1) % 100}',
         f'Dropped {(args.year-2) % 100}',
-        f'Kept {(args.year-3) % 100}',
+        f'Kept {(args.year-2) % 100}',
         f'Dropped {(args.year-3) % 100}',
+        f'Kept {(args.year-3) % 100}',
     ])
     for manager_name, group in itertools.groupby(result, lambda r: r[0]):
         for _, keeper_round, reason, player, playerid, draft_round, k1, k2, k3, d1, d2, d3, in group:
@@ -207,12 +207,12 @@ def main(args):
                 keeper_round,
                 draft_round,
                 reason,
-                k1,
                 d1,
-                k2,
+                k1,
                 d2,
-                k3,
+                k2,
                 d3,
+                k3,
             ])
 
 if __name__ == '__main__':
