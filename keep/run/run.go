@@ -14,6 +14,7 @@ import (
 )
 
 var (
+	ideal   = flag.Bool("ideal", false, "make ideal CSV")
 	reveal  = flag.Bool("reveal", true, "make report for reveal")
 	dataDir = flag.String("data_dir", "", "directory for data files; empty string means $HOME/data")
 )
@@ -144,7 +145,7 @@ func ReadConstants(dataDir string) (*constants, error) {
 		viaTrade := strings.TrimSpace(record[2]) != ""
 
 		if pick != len(picks)+1 {
-			log.Fatal("Out of order pick: %d\n", pick)
+			log.Fatalf("Out of order pick: %d\n", pick)
 		}
 
 		mid, ok := mids[managerName]
@@ -183,7 +184,7 @@ func ReadConstants(dataDir string) (*constants, error) {
 
 			gid, ok := gids[gridderName]
 			if !ok {
-				log.Fatal("No gridder with name %q", gridderName)
+				log.Fatalf("No gridder with name %q", gridderName)
 			}
 
 			dash := strings.Index(roundPick, "-")
@@ -218,7 +219,7 @@ func ReadConstants(dataDir string) (*constants, error) {
 
 			gid, ok := gids[gridderName]
 			if !ok {
-				log.Fatal("No gridder with name %q", gridderName)
+				log.Fatalf("No gridder with name %q", gridderName)
 			}
 
 			dash := strings.Index(roundPick, "-")
@@ -372,6 +373,10 @@ func main() {
 	// Output the results.  This currently loops through the entire
 	// response for each gridder.  We could make it more efficient if
 	// necessary.
+	if *ideal {
+		// TODO: Use CSV writer.
+		fmt.Printf("manager,player,pick\n")
+	}
 	for g, gridder := range consts.gridders {
 		if gridder.mid == -1 {
 			continue
@@ -380,22 +385,32 @@ func main() {
 		if len(managerName) > 20 {
 			managerName = managerName[:20]
 		}
-		fmt.Printf("%-20s %35s (%6.1f) @ %2d ", managerName, gridder.name, gridder.value, gridder.round)
-		for _, profile := range profiles {
-			var round string
+		if !*ideal {
+			fmt.Printf("%-20s %35s (%6.1f) @ %2d ", managerName, gridder.name, gridder.value, gridder.round)
+		}
+		for i, profile := range profiles {
+			pick := -1
 			for _, keeps := range profile {
 				for _, k := range keeps {
 					if gridderid(g) == k.gid {
-						round = strings.ToUpper(strconv.FormatInt(int64(k.pick/len(profile)+1), 36))
+						pick = k.pick
 					}
 				}
 			}
-			if len(round) > 0 {
-				fmt.Printf("%s", round)
+			if *ideal {
+				if i == len(profiles)-1 && pick >= 0 {
+					fmt.Printf("%s,%s,%d-%d\n", managerName, gridder.name, pick/12+1, pick+1)
+				}
 			} else {
-				fmt.Printf(".")
+				if pick >= 0 {
+					fmt.Print(strings.ToUpper(strconv.FormatInt(int64(pick/len(profile)+1), 36)))
+				} else {
+					fmt.Printf(".")
+				}
 			}
 		}
-		fmt.Printf("\n")
+		if !*ideal {
+			fmt.Printf("\n")
+		}
 	}
 }
