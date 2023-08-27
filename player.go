@@ -22,6 +22,7 @@ type Player struct {
 	Rank    int
 	PosRank int
 	ADP     float64
+	Stddev  float64 // ADP stddev
 
 	Bye int
 }
@@ -63,6 +64,9 @@ var byeMap = map[string]int{
 }
 
 func lookupBye(name string) int {
+	if true {
+		return 0 // disable byes for now
+	}
 	if strings.Contains(name, "dummy") {
 		return 0
 	}
@@ -108,6 +112,7 @@ func ReadPlayers(filename string) ([]*Player, error) {
 		colRank    = 7
 		colPosRank = 8
 		colADP     = 9
+		colStddev  = 12
 	)
 	f, err := os.Open(filename)
 	if err != nil {
@@ -147,6 +152,10 @@ func ReadPlayers(filename string) ([]*Player, error) {
 		if err != nil {
 			return nil, err
 		}
+		stddev, err := strconv.ParseFloat(record[colStddev], 64)
+		if err != nil {
+			return nil, err
+		}
 		players = append(players, &Player{
 			Pick:    pick,
 			ID:      id,
@@ -158,6 +167,7 @@ func ReadPlayers(filename string) ([]*Player, error) {
 			PosRank: posRank,
 			ADP:     adp,
 			Bye:     lookupBye(record[colName]),
+			Stddev:  stddev,
 		})
 	}
 	return players, nil
