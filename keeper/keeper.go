@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"encoding/csv"
+	"fmt"
 	"log"
 	"os"
 	"path"
@@ -278,7 +279,7 @@ func ReadConstants(dataDir string, reveal bool) (*Constants, error) {
 
 	grecords, err := csv.NewReader(g).ReadAll()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("player values: %s", err)
 	}
 
 	var gridders []*Gridder
@@ -305,7 +306,7 @@ func ReadConstants(dataDir string, reveal bool) (*Constants, error) {
 
 	krecords, err := csv.NewReader(k).ReadAll()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("keeper options: %s", err)
 	}
 
 	var managers []*Manager
@@ -344,7 +345,7 @@ func ReadConstants(dataDir string, reveal bool) (*Constants, error) {
 
 	orecords, err := csv.NewReader(o).ReadAll()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("draft order: %s", err)
 	}
 
 	var picks []ManagerID
@@ -382,7 +383,7 @@ func ReadConstants(dataDir string, reveal bool) (*Constants, error) {
 
 		idrecords, err := csv.NewReader(id).ReadAll()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("keeper ideal: %s", err)
 		}
 
 		for _, record := range idrecords[1:] { // skip header
@@ -417,7 +418,7 @@ func ReadConstants(dataDir string, reveal bool) (*Constants, error) {
 
 		arecords, err := csv.NewReader(a).ReadAll()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("keeper selections: %s", err)
 		}
 
 		for _, record := range arecords[1:] { // skip header
@@ -439,6 +440,15 @@ func ReadConstants(dataDir string, reveal bool) (*Constants, error) {
 			pick, err := strconv.Atoi(roundPick[dash+1:])
 			if err != nil {
 				log.Fatal(err)
+			}
+
+			// TODO: Check that this manager owns this pick.
+			round, err := strconv.Atoi(roundPick[:dash])
+			if err != nil {
+				log.Fatal(err)
+			}
+			if (pick-1)/12 != round-1 {
+				log.Fatal(roundPick)
 			}
 
 			actual[mid] = append(actual[mid], &Keep{pick - 1, gid})
