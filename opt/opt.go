@@ -68,7 +68,7 @@ func main() {
 		}
 
 		optStrategies := make([]fantasy.Strategy, numTeams)
-		for i := 0; i < numTeams; i++ {
+		for t := 0; t < numTeams; t++ {
 			ch := strategyString[t]
 			switch ch {
 			case 'A':
@@ -78,7 +78,7 @@ func main() {
 			case 'O':
 				// Approximate Optimize with Humanoid.
 				// TODO: Figure out a better approximation.
-				optStrategies[i] = fantasy.NewHumanoid(order, rules, rankedPlayers[t])
+				optStrategies[t] = fantasy.NewHumanoid(order, rules, rankedPlayers[t])
 			default:
 				log.Fatalf("Invalid strategy: %c", ch)
 			}
