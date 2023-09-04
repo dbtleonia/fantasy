@@ -4,10 +4,8 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strconv"
-	"strings"
 )
 
 type Player struct {
@@ -21,59 +19,6 @@ type Player struct {
 	Pos    string // QB RB WR TE K DST
 	ADP    float64
 	Stddev float64 // ADP stddev
-
-	Bye int
-}
-
-var byeMap = map[string]int{
-	"":    0,
-	"ARI": 12,
-	"ATL": 6,
-	"BAL": 8,
-	"BUF": 7,
-	"CAR": 13,
-	"CHI": 10,
-	"CIN": 10,
-	"CLE": 13,
-	"DAL": 7,
-	"DEN": 11,
-	"DET": 9,
-	"GB":  13,
-	"HOU": 10,
-	"IND": 14,
-	"JAC": 7,
-	"KC":  12,
-	"LAC": 7,
-	"LAR": 11,
-	"LV":  8,
-	"MIA": 14,
-	"MIN": 7,
-	"NE":  14,
-	"NO":  6,
-	"NYG": 10,
-	"NYJ": 6,
-	"PHI": 14,
-	"PIT": 7,
-	"SEA": 9,
-	"SF":  6,
-	"TB":  9,
-	"TEN": 13,
-	"WAS": 9,
-}
-
-func lookupBye(name string) int {
-	if true {
-		return 0 // disable byes for now
-	}
-	if strings.Contains(name, "dummy") {
-		return 0
-	}
-	team := strings.Split(strings.Split(name, "(")[1], " ")[0]
-	bye, ok := byeMap[team]
-	if !ok {
-		log.Fatal("Unknown team: %q", team)
-	}
-	return bye
 }
 
 type ByPick []*Player
@@ -96,7 +41,7 @@ func (x ByADP) Less(i, j int) bool { return x[i].ADP < x[j].ADP }
 
 func (p *Player) String() string {
 	// TODO: Don't hardcode %-25s.
-	return fmt.Sprintf("%3d %07d %5.1f %3s %7.2f %-3s b%02d %-30s # %s", p.Pick, p.ID, p.ADP, p.Pos, p.Value, p.Team, p.Bye, p.Name, p.Justification)
+	return fmt.Sprintf("%3d %07d %5.1f %3s %7.2f %-3s %-30s # %s", p.Pick, p.ID, p.ADP, p.Pos, p.Value, p.Team, p.Name, p.Justification)
 }
 
 func ReadPlayers(filename string) ([]*Player, error) {
@@ -108,7 +53,7 @@ func ReadPlayers(filename string) ([]*Player, error) {
 		colTeam   = 4
 		colValue  = 5
 		colADP    = 7
-		colStddev = 10
+		colStddev = 8
 	)
 	f, err := os.Open(filename)
 	if err != nil {
@@ -152,7 +97,6 @@ func ReadPlayers(filename string) ([]*Player, error) {
 			Value:  value,
 			Pos:    record[colPos],
 			ADP:    adp,
-			Bye:    lookupBye(record[colName]),
 			Stddev: stddev,
 		})
 	}

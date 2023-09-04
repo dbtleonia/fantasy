@@ -188,9 +188,7 @@ func main() {
 				record[colValue],                           // value
 				"999",                                      // points
 				fmt.Sprintf("%.1f", pADP.mean),             // adp mean
-				strings.TrimPrefix(record[colValue], "$"), // ceiling
-				"",                               // bye
-				fmt.Sprintf("%.1f", pADP.stddev), // adp stddev
+				fmt.Sprintf("%.1f", pADP.stddev),           // adp stddev
 			}
 			j++
 		}
@@ -231,8 +229,6 @@ func main() {
 				"0",     // value
 				"0",     // points
 				"300.0", // adp mean
-				"0",     // ceiling
-				"",      // bye
 				"20.0",  // adp stddev
 			})
 		}
