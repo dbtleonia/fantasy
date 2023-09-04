@@ -134,7 +134,7 @@ func (o *Optimize) Select(state *State) (*Player, string) {
 
 	var justification []string
 	for _, c := range candidates {
-		justification = append(justification, fmt.Sprintf("%c%02d=%d", c.Player.Pos[0], c.Player.PosRank, int(c.Score)))
+		justification = append(justification, fmt.Sprintf("%c%.1f=%d", c.Player.Pos[0], c.Player.ADP, int(c.Score)))
 	}
 
 	return candidates[0].Player, strings.Join(justification, " ")

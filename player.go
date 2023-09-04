@@ -14,15 +14,13 @@ type Player struct {
 	Pick          int    // 0 if undrafted
 	Justification string // "" if undrafted
 
-	ID      int
-	Name    string
-	Team    string
-	Value   float64
-	Pos     string // QB RB WR TE K DST
-	Rank    int
-	PosRank int
-	ADP     float64
-	Stddev  float64 // ADP stddev
+	ID     int
+	Name   string
+	Team   string
+	Value  float64
+	Pos    string // QB RB WR TE K DST
+	ADP    float64
+	Stddev float64 // ADP stddev
 
 	Bye int
 }
@@ -98,21 +96,19 @@ func (x ByADP) Less(i, j int) bool { return x[i].ADP < x[j].ADP }
 
 func (p *Player) String() string {
 	// TODO: Don't hardcode %-25s.
-	return fmt.Sprintf("%3d %07d %3d %5.1f %3s %3d %7.2f %-3s b%02d %-30s # %s", p.Pick, p.ID, p.Rank, p.ADP, p.Pos, p.PosRank, p.Value, p.Team, p.Bye, p.Name, p.Justification)
+	return fmt.Sprintf("%3d %07d %5.1f %3s %7.2f %-3s b%02d %-30s # %s", p.Pick, p.ID, p.ADP, p.Pos, p.Value, p.Team, p.Bye, p.Name, p.Justification)
 }
 
 func ReadPlayers(filename string) ([]*Player, error) {
 	const (
-		colPick    = 0
-		colID      = 1
-		colName    = 2
-		colPos     = 3
-		colTeam    = 4
-		colValue   = 5
-		colRank    = 7
-		colPosRank = 8
-		colADP     = 9
-		colStddev  = 12
+		colPick   = 0
+		colID     = 1
+		colName   = 2
+		colPos    = 3
+		colTeam   = 4
+		colValue  = 5
+		colADP    = 7
+		colStddev = 10
 	)
 	f, err := os.Open(filename)
 	if err != nil {
@@ -140,14 +136,6 @@ func ReadPlayers(filename string) ([]*Player, error) {
 		if err != nil {
 			return nil, err
 		}
-		rank, err := strconv.Atoi(record[colRank])
-		if err != nil {
-			return nil, err
-		}
-		posRank, err := strconv.Atoi(record[colPosRank])
-		if err != nil {
-			return nil, err
-		}
 		adp, err := strconv.ParseFloat(record[colADP], 64)
 		if err != nil {
 			return nil, err
@@ -157,17 +145,15 @@ func ReadPlayers(filename string) ([]*Player, error) {
 			return nil, err
 		}
 		players = append(players, &Player{
-			Pick:    pick,
-			ID:      id,
-			Name:    record[colName],
-			Team:    record[colTeam],
-			Value:   value,
-			Pos:     record[colPos],
-			Rank:    rank,
-			PosRank: posRank,
-			ADP:     adp,
-			Bye:     lookupBye(record[colName]),
-			Stddev:  stddev,
+			Pick:   pick,
+			ID:     id,
+			Name:   record[colName],
+			Team:   record[colTeam],
+			Value:  value,
+			Pos:    record[colPos],
+			ADP:    adp,
+			Bye:    lookupBye(record[colName]),
+			Stddev: stddev,
 		})
 	}
 	return players, nil

@@ -136,7 +136,7 @@ func main() {
 			colName = 0
 		)
 		colValue := len(records[0]) - 1
-		for i, record := range records[1:] {
+		for _, record := range records[1:] {
 			if len(record) != len(records[0]) {
 				continue // skip bad records
 			}
@@ -187,8 +187,6 @@ func main() {
 				"XXX",                                      // team
 				record[colValue],                           // value
 				"999",                                      // points
-				strconv.Itoa(i + 1),                        // rank
-				strconv.Itoa(poscount[pos]),                // posrank
 				fmt.Sprintf("%.1f", pADP.mean),             // adp mean
 				strings.TrimPrefix(record[colValue], "$"), // ceiling
 				"",                               // bye
@@ -224,21 +222,18 @@ func main() {
 	for j, pos := range []string{"DST", "K", "QB", "RB", "TE", "WR"} {
 		for i := 0; i < *dummy; i++ {
 			poscount[pos]++
-			n := len(out)
 			out = append(out, []string{
 				"0",
 				strconv.Itoa(20000 + 10000*j + i), // id
 				fmt.Sprintf("%sdummy <%s> #%d", pos[:1], pos, i), // name
-				pos,                         // pos
-				"XXX",                       // team
-				"0",                         // value
-				"0",                         // points
-				strconv.Itoa(n + 1),         // rank
-				strconv.Itoa(poscount[pos]), // posrank
-				"300.0",                     // adp mean
-				"0",                         // ceiling
-				"",                          // bye
-				"20.0",                      // adp stddev
+				pos,     // pos
+				"XXX",   // team
+				"0",     // value
+				"0",     // points
+				"300.0", // adp mean
+				"0",     // ceiling
+				"",      // bye
+				"20.0",  // adp stddev
 			})
 		}
 	}
