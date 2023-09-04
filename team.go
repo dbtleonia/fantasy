@@ -6,7 +6,7 @@ import (
 )
 
 type Team struct {
-	players   []*Player // sorted by value descending
+	players   []*Player // sorted by points descending
 	positions string    // sorted ascending eg "DQRWW"
 }
 
@@ -16,9 +16,9 @@ func (t *Team) Add(player *Player, pick int, justification string) {
 		log.Fatalf("Add player with Pick != 0: %s", player)
 	}
 
-	// Sort by value descending.
+	// Sort by points descending.
 	i := 0
-	for ; i < len(t.players) && player.Value < t.players[i].Value; i++ {
+	for ; i < len(t.players) && player.Points < t.players[i].Points; i++ {
 	}
 	playerCopy := *player
 	playerCopy.Pick = pick
@@ -36,9 +36,9 @@ func (t *Team) Add(player *Player, pick int, justification string) {
 	t.positions = t.positions[:j] + string(ch) + t.positions[j:]
 }
 
-// PlayersByValue returns the players sorted by value
+// PlayersByPoints returns the players sorted by points
 // descending.  Callers should not modify the returned list.
-func (t *Team) PlayersByValue() []*Player {
+func (t *Team) PlayersByPoints() []*Player {
 	return t.players
 }
 

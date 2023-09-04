@@ -118,7 +118,6 @@ func main() {
 	j := 0
 	players := make(map[string][]string)
 	var problems []string
-	poscount := make(map[string]int)
 	for _, file := range files {
 		f, err := os.Open(path.Join(flag.Arg(0), file.Name()))
 		if err != nil {
@@ -135,20 +134,20 @@ func main() {
 		const (
 			colName = 0
 		)
-		colValue := len(records[0]) - 1
+		colPoints := len(records[0]) - 1
 		for _, record := range records[1:] {
 			if len(record) != len(records[0]) {
 				continue // skip bad records
 			}
 			name := record[colName]
-			value, err := strconv.ParseFloat(record[colValue], 64)
+			points, err := strconv.ParseFloat(record[colPoints], 64)
 			if err != nil {
 				log.Fatal(err)
 			}
 			// TODO: Use a struct rather than an array.
 			if player, ok := players[name]; ok {
 				v, _ := strconv.ParseFloat(player[5], 64)
-				if v > value {
+				if v > points {
 					continue
 				}
 			}
@@ -169,7 +168,6 @@ func main() {
 			default:
 				problems = append(problems, file.Name())
 			}
-			poscount[pos]++
 
 			pADP, ok := playerADP[record[colName]]
 			if ok {
@@ -178,15 +176,13 @@ func main() {
 				pADP = adp{300.0, 20.0}
 			}
 
-			// TODO: Remove dummy values once sim/opt no longer need them.
 			players[name] = []string{
 				strconv.Itoa(keeperPicks[record[colName]]), // pick
 				strconv.Itoa(10000 + j),                    // id
 				record[colName],                            // name
 				pos,                                        // pos
 				"XXX",                                      // team
-				record[colValue],                           // value
-				"999",                                      // points
+				record[colPoints],                          // points
 				fmt.Sprintf("%.1f", pADP.mean),             // adp mean
 				fmt.Sprintf("%.1f", pADP.stddev),           // adp stddev
 			}
@@ -219,14 +215,12 @@ func main() {
 	// Append dummy players.
 	for j, pos := range []string{"DST", "K", "QB", "RB", "TE", "WR"} {
 		for i := 0; i < *dummy; i++ {
-			poscount[pos]++
 			out = append(out, []string{
-				"0",
+				"0",                               // pick
 				strconv.Itoa(20000 + 10000*j + i), // id
 				fmt.Sprintf("%sdummy <%s> #%d", pos[:1], pos, i), // name
 				pos,     // pos
 				"XXX",   // team
-				"0",     // value
 				"0",     // points
 				"300.0", // adp mean
 				"20.0",  // adp stddev

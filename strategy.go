@@ -25,7 +25,7 @@ func (a *Autopick) Select(state *State) (*Player, string) {
 	i := a.order[state.Pick]
 	team := state.Teams[i]
 	allowedPos := a.rules.AutopickMap[team.PosString()]
-	undrafted := state.UndraftedByValue
+	undrafted := state.UndraftedByPoints
 	if a.useADP {
 		undrafted = state.UndraftedByADP
 	}
@@ -54,7 +54,7 @@ func (h *Humanoid) Select(state *State) (*Player, string) {
 	allowedPos := h.rules.HumanoidMap[team.PosString()]
 	r := int(rand.ExpFloat64() / h.lambda)
 	justification := fmt.Sprintf("%-6s reached %d", h.rules.HumanoidRaw[team.PosString()], r)
-	undrafted := state.UndraftedByValue
+	undrafted := state.UndraftedByPoints
 	if h.useADP {
 		undrafted = state.UndraftedByADP
 	}
@@ -113,14 +113,14 @@ func (x ByScore) Less(i, j int) bool { return x[i].Score < x[j].Score }
 func (o *Optimize) Candidates(state *State) []*Candidate {
 	i := o.order[state.Pick]
 	var result []*Candidate
-	for _, player := range posLeaders(state.UndraftedByValue) {
+	for _, player := range posLeaders(state.UndraftedByPoints) {
 		score := 0.0
 		for trial := 0; trial < o.numTrials; trial++ {
-			undraftedByValue := removePlayer(clonePlayers(state.UndraftedByValue), player.ID)
+			undraftedByPoints := removePlayer(clonePlayers(state.UndraftedByPoints), player.ID)
 			undraftedByADP := removePlayer(clonePlayers(state.UndraftedByADP), player.ID)
 			teams := cloneTeams(state.Teams)
 			teams[i].Add(player, state.Pick, "")
-			RunDraft(&State{teams, undraftedByValue, undraftedByADP, state.Pick + 1}, o.order, o.strategies)
+			RunDraft(&State{teams, undraftedByPoints, undraftedByADP, state.Pick + 1}, o.order, o.strategies)
 			score += o.scorer.Score(teams[i])
 		}
 		result = append(result, &Candidate{player, score})

@@ -5,10 +5,10 @@ import (
 )
 
 type State struct {
-	Teams            []*Team // drafted players
-	UndraftedByValue []*Player
-	UndraftedByADP   []*Player
-	Pick             int
+	Teams             []*Team // drafted players
+	UndraftedByPoints []*Player
+	UndraftedByADP    []*Player
+	Pick              int
 }
 
 func ReadState(playersCsv string, numTeams int, order []int) (*State, []int, error) {
@@ -18,17 +18,17 @@ func ReadState(playersCsv string, numTeams int, order []int) (*State, []int, err
 	}
 
 	drafted := make(map[int]*Player)
-	var undraftedByValue, undraftedByADP []*Player
+	var undraftedByPoints, undraftedByADP []*Player
 	for _, player := range players {
 		if player.Pick == 0 {
-			undraftedByValue = append(undraftedByValue, player)
+			undraftedByPoints = append(undraftedByPoints, player)
 			undraftedByADP = append(undraftedByADP, player)
 		} else {
 			drafted[player.Pick] = player
 			drafted[player.Pick].Pick = 0 // we'll add it back later
 		}
 	}
-	sort.Sort(sort.Reverse(ByValue(undraftedByValue)))
+	sort.Sort(sort.Reverse(ByPoints(undraftedByPoints)))
 	sort.Sort(ByADP(undraftedByADP))
 
 	teams := make([]*Team, numTeams)
@@ -60,9 +60,9 @@ func ReadState(playersCsv string, numTeams int, order []int) (*State, []int, err
 	}
 
 	return &State{
-		Teams:            teams,
-		UndraftedByValue: undraftedByValue,
-		UndraftedByADP:   undraftedByADP,
-		Pick:             pick,
+		Teams:             teams,
+		UndraftedByPoints: undraftedByPoints,
+		UndraftedByADP:    undraftedByADP,
+		Pick:              pick,
 	}, newOrder, nil
 }

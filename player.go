@@ -14,9 +14,9 @@ type Player struct {
 
 	ID     int
 	Name   string
-	Team   string
-	Value  float64
 	Pos    string // QB RB WR TE K DST
+	Team   string
+	Points float64
 	ADP    float64
 	Stddev float64 // ADP stddev
 }
@@ -27,11 +27,11 @@ func (x ByPick) Len() int           { return len(x) }
 func (x ByPick) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 func (x ByPick) Less(i, j int) bool { return x[i].Pick < x[j].Pick }
 
-type ByValue []*Player
+type ByPoints []*Player
 
-func (x ByValue) Len() int           { return len(x) }
-func (x ByValue) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
-func (x ByValue) Less(i, j int) bool { return x[i].Value < x[j].Value }
+func (x ByPoints) Len() int           { return len(x) }
+func (x ByPoints) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
+func (x ByPoints) Less(i, j int) bool { return x[i].Points < x[j].Points }
 
 type ByADP []*Player
 
@@ -41,7 +41,7 @@ func (x ByADP) Less(i, j int) bool { return x[i].ADP < x[j].ADP }
 
 func (p *Player) String() string {
 	// TODO: Don't hardcode %-25s.
-	return fmt.Sprintf("%3d %07d %5.1f %3s %7.2f %-3s %-30s # %s", p.Pick, p.ID, p.ADP, p.Pos, p.Value, p.Team, p.Name, p.Justification)
+	return fmt.Sprintf("%3d %07d %5.1f %3s %7.2f %-3s %-30s # %s", p.Pick, p.ID, p.ADP, p.Pos, p.Points, p.Team, p.Name, p.Justification)
 }
 
 func ReadPlayers(filename string) ([]*Player, error) {
@@ -51,9 +51,9 @@ func ReadPlayers(filename string) ([]*Player, error) {
 		colName   = 2
 		colPos    = 3
 		colTeam   = 4
-		colValue  = 5
-		colADP    = 7
-		colStddev = 8
+		colPoints = 5
+		colADP    = 6
+		colStddev = 7
 	)
 	f, err := os.Open(filename)
 	if err != nil {
@@ -77,7 +77,7 @@ func ReadPlayers(filename string) ([]*Player, error) {
 		if err != nil {
 			return nil, err
 		}
-		value, err := strconv.ParseFloat(record[colValue], 64)
+		points, err := strconv.ParseFloat(record[colPoints], 64)
 		if err != nil {
 			return nil, err
 		}
@@ -94,7 +94,7 @@ func ReadPlayers(filename string) ([]*Player, error) {
 			ID:     id,
 			Name:   record[colName],
 			Team:   record[colTeam],
-			Value:  value,
+			Points: points,
 			Pos:    record[colPos],
 			ADP:    adp,
 			Stddev: stddev,

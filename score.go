@@ -25,25 +25,25 @@ func (s *Scorer) Score(team *Team) float64 {
 		}
 	}
 	result := 0.0
-	for _, player := range team.PlayersByValue() {
+	for _, player := range team.PlayersByPoints() {
 		ch := player.Pos[0]
 		if start[ch] > 0 {
 			start[ch]--
-			result += player.Value
+			result += player.Points
 			continue
 		}
 		switch ch {
 		case 'R':
 			if start['X'] > 0 {
 				start['X']--
-				result += player.Value
+				result += player.Points
 				continue
 			}
 		}
 		if s.Bench {
 			if bench[ch] < len(benchWeights[ch]) {
 				if ch != 'D' && ch != 'T' {
-					result += player.Value*benchWeights[ch][bench[ch]] + 0.5
+					result += player.Points*benchWeights[ch][bench[ch]] + 0.5
 					bench[ch]++
 					continue
 				}
