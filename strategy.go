@@ -102,8 +102,15 @@ func (x ByScore) Less(i, j int) bool { return x[i].Score < x[j].Score }
 
 func (o *Optimize) Candidates(state *State) []*Candidate {
 	i := o.order[state.Pick]
+
+	// TODO: Compute from order.
+	nextPick := state.Pick + 12
+
 	var result []*Candidate
 	for _, player := range posLeaders(state.UndraftedByPoints) {
+		if (player.ADP-float64(nextPick))/player.Stddev > 2.0 {
+			continue
+		}
 		score := 0.0
 		for trial := 0; trial < o.numTrials; trial++ {
 			newState := state.Clone()
