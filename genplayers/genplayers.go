@@ -14,7 +14,7 @@ import (
 
 var (
 	dummy   = flag.Int("dummy", 10, "number of dummy players to generate for each position")
-	keepers = flag.String("keepers", "", "keepers file named keepers-<nteams>.csv")
+	keepers = flag.String("keepers", "", "keepers file")
 	adpDir  = flag.String("adp", "", "directory with ADP values")
 )
 
@@ -52,21 +52,13 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		for _, record := range records {
-			nteams, err := strconv.Atoi(strings.TrimSuffix(strings.Split(*keepers, "-")[1], ".csv"))
+		for _, record := range records[1:] {
+			parts := strings.Split(record[2], "-")
+			pick, err := strconv.Atoi(parts[1])
 			if err != nil {
 				log.Fatal(err)
 			}
-			parts := strings.Split(record[1], "-")
-			round, err := strconv.Atoi(parts[0])
-			if err != nil {
-				log.Fatal(err)
-			}
-			slot, err := strconv.Atoi(parts[1])
-			if err != nil {
-				log.Fatal(err)
-			}
-			keeperPicks[record[2]] = nteams*(round-1) + slot
+			keeperPicks[record[1]] = pick
 		}
 	}
 
@@ -169,6 +161,11 @@ func main() {
 				problems = append(problems, file.Name())
 			}
 
+			keeperPick, ok := keeperPicks[record[colName]]
+			if ok {
+				delete(keeperPicks, record[colName])
+			}
+
 			pADP, ok := playerADP[record[colName]]
 			if ok {
 				delete(playerADP, record[colName])
@@ -177,20 +174,28 @@ func main() {
 			}
 
 			players[name] = []string{
-				strconv.Itoa(keeperPicks[record[colName]]), // pick
-				strconv.Itoa(10000 + j),                    // id
-				record[colName],                            // name
-				pos,                                        // pos
-				"XXX",                                      // team
-				record[colPoints],                          // points
-				fmt.Sprintf("%.1f", pADP.mean),             // adp mean
-				fmt.Sprintf("%.1f", pADP.stddev),           // adp stddev
+				strconv.Itoa(keeperPick),         // pick
+				strconv.Itoa(10000 + j),          // id
+				record[colName],                  // name
+				pos,                              // pos
+				"XXX",                            // team
+				record[colPoints],                // points
+				fmt.Sprintf("%.1f", pADP.mean),   // adp mean
+				fmt.Sprintf("%.1f", pADP.stddev), // adp stddev
 			}
 			j++
 		}
 	}
 	if len(problems) > 0 {
 		log.Fatalf("Unknown positions:  \n  %s\n", strings.Join(problems, "\n  "))
+	}
+	if len(keeperPicks) > 0 {
+		var ps []string
+		for p := range keeperPicks {
+			ps = append(ps, p)
+		}
+		sort.Strings(ps)
+		log.Fatalf("Keeper not used for:  \n  %s\n", strings.Join(ps, "\n  "))
 	}
 	if len(playerADP) > 0 {
 		var ps []string
