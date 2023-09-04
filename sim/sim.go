@@ -6,14 +6,14 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"sort"
 	"time"
 
 	"github.com/dbtleonia/fantasy"
 )
 
 var (
-	lambda    = flag.Float64("lambda", 0.36, "rate parameter for humanoid")
-	numTrials = flag.Int("num_trials", 100, "number of trials to run for optimize")
+	numTrials = flag.Int("num_trials", 10, "number of trials to run for optimize")
 	seed      = flag.Int64("seed", 0, "seed for rand; if 0 uses time")
 	bench     = flag.Bool("bench", false, "score bench (using hardcoded weights)")
 )
@@ -54,43 +54,60 @@ func main() {
 		log.Fatal(err)
 	}
 
-	optStrategies := make([]fantasy.Strategy, len(order))
-	for i := 1; i < len(order); i++ {
-		t := order[i]
-		if t == -1 { // this pick is a keeper, skip it
-			continue
+	// Generate random ADP rankings for each manager.
+	rankedPlayers := make([][]fantasy.PlayerADP, numTeams)
+	for t := 0; t < numTeams; t++ {
+		for _, player := range state.Players {
+			rankedPlayers[t] = append(rankedPlayers[t], fantasy.PlayerADP{
+				PlayerID: player.ID,
+				ADP:      rand.NormFloat64()*player.Stddev + player.ADP,
+			})
 		}
-		ch := strategyString[t]
-		switch ch {
-		case 'A':
-			optStrategies[i] = fantasy.NewAutopick(order, rules, true)
-		case 'H':
-			optStrategies[i] = fantasy.NewHumanoid(order, rules, true, *lambda)
-		case 'O':
-			// Approximate Optimize with Humanoid.
-			// TODO: Figure out a better approximation.
-			optStrategies[i] = fantasy.NewHumanoid(order, rules, false, *lambda)
-		default:
-			log.Fatalf("Invalid strategy: %c", ch)
+		sort.Slice(rankedPlayers[t], func(i, j int) bool { return rankedPlayers[t][i].ADP < rankedPlayers[t][j].ADP })
+	}
+
+	optStrategiesFn := func() []fantasy.Strategy {
+		optRankedPlayers := make([][]fantasy.PlayerADP, numTeams)
+		for t := 0; t < numTeams; t++ {
+			for _, player := range state.Players {
+				optRankedPlayers[t] = append(optRankedPlayers[t], fantasy.PlayerADP{
+					PlayerID: player.ID,
+					ADP:      rand.NormFloat64()*player.Stddev + player.ADP,
+				})
+			}
+			sort.Slice(optRankedPlayers[t], func(i, j int) bool { return optRankedPlayers[t][i].ADP < optRankedPlayers[t][j].ADP })
 		}
+		optStrategies := make([]fantasy.Strategy, numTeams)
+		for t := 0; t < numTeams; t++ {
+			ch := strategyString[t]
+			switch ch {
+			case 'A':
+				optStrategies[t] = fantasy.NewAutopick(order, rules)
+			case 'H':
+				optStrategies[t] = fantasy.NewHumanoid(order, rules, optRankedPlayers[t])
+			case 'O':
+				// Approximate Optimize with Humanoid.
+				// TODO: Figure out a better approximation.
+				optStrategies[t] = fantasy.NewHumanoid(order, rules, optRankedPlayers[t])
+			default:
+				log.Fatalf("Invalid strategy: %c", ch)
+			}
+		}
+		return optStrategies
 	}
 
 	scorer := &fantasy.Scorer{[]byte(schema), *bench}
 
-	strategies := make([]fantasy.Strategy, len(order))
-	for i := 1; i < len(order); i++ {
-		t := order[i]
-		if t == -1 { // this pick is a keeper, skip it
-			continue
-		}
+	strategies := make([]fantasy.Strategy, numTeams)
+	for t := 0; t < numTeams; t++ {
 		ch := strategyString[t]
 		switch ch {
 		case 'A':
-			strategies[i] = fantasy.NewAutopick(order, rules, true)
+			strategies[t] = fantasy.NewAutopick(order, rules)
 		case 'H':
-			strategies[i] = fantasy.NewHumanoid(order, rules, true, *lambda)
+			strategies[t] = fantasy.NewHumanoid(order, rules, rankedPlayers[t])
 		case 'O':
-			strategies[i] = fantasy.NewOptimize(order, optStrategies, rules, scorer, *numTrials)
+			strategies[t] = fantasy.NewOptimize(order, optStrategiesFn, rules, scorer, *numTrials)
 		default:
 			log.Fatalf("Invalid strategy: %c", ch)
 		}

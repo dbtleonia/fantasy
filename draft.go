@@ -4,14 +4,14 @@ package fantasy
 // modifies the state during the simulation.  The order and strategies
 // are read-only.
 func RunDraft(state *State, order []int, strategies []Strategy) {
-	for ; state.Pick < len(order); state.Pick++ {
+	for state.Pick < len(order) {
 		i := order[state.Pick]
 		if i == -1 { // this pick is a keeper, skip it
+			state.Pick++
 			continue
 		}
-		player, justification := strategies[state.Pick].Select(state)
-		state.Teams[i].Add(player, state.Pick, justification)
-		state.UndraftedByPoints = removePlayer(state.UndraftedByPoints, player.ID)
-		state.UndraftedByADP = removePlayer(state.UndraftedByADP, player.ID)
+		player, justification := strategies[i].Select(state)
+		state.Update(i, player, justification)
+		state.Pick++
 	}
 }

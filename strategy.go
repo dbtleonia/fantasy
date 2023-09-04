@@ -2,7 +2,6 @@ package fantasy
 
 import (
 	"fmt"
-	"math/rand"
 	"sort"
 	"strings"
 )
@@ -12,72 +11,63 @@ type Strategy interface {
 }
 
 type Autopick struct {
-	order  []int
-	rules  *Rules
-	useADP bool
+	order []int
+	rules *Rules
 }
 
-func NewAutopick(order []int, rules *Rules, useADP bool) *Autopick {
-	return &Autopick{order, rules, useADP}
+func NewAutopick(order []int, rules *Rules) *Autopick {
+	return &Autopick{order, rules}
 }
 
 func (a *Autopick) Select(state *State) (*Player, string) {
 	i := a.order[state.Pick]
 	team := state.Teams[i]
 	allowedPos := a.rules.AutopickMap[team.PosString()]
-	undrafted := state.UndraftedByPoints
-	if a.useADP {
-		undrafted = state.UndraftedByADP
-	}
-	for _, player := range undrafted {
+	// TODO: Use ADP instead.
+	for _, player := range state.UndraftedByPoints {
 		if allowedPos[player.Pos[0]] {
 			return player, a.rules.AutopickRaw[team.PosString()]
 		}
 	}
-	return undrafted[0], ""
+	return state.UndraftedByPoints[0], ""
+}
+
+type PlayerADP struct {
+	PlayerID int
+	ADP      float64
 }
 
 type Humanoid struct {
-	order  []int
-	rules  *Rules
-	useADP bool
-	lambda float64
+	order         []int
+	rules         *Rules
+	rankedPlayers []PlayerADP
 }
 
-func NewHumanoid(order []int, rules *Rules, useADP bool, lambda float64) *Humanoid {
-	return &Humanoid{order, rules, useADP, lambda}
+func NewHumanoid(order []int, rules *Rules, rankedPlayers []PlayerADP) *Humanoid {
+	return &Humanoid{order, rules, rankedPlayers}
 }
 
 func (h *Humanoid) Select(state *State) (*Player, string) {
 	i := h.order[state.Pick]
 	team := state.Teams[i]
 	allowedPos := h.rules.HumanoidMap[team.PosString()]
-	r := int(rand.ExpFloat64() / h.lambda)
-	justification := fmt.Sprintf("%-6s reached %d", h.rules.HumanoidRaw[team.PosString()], r)
-	undrafted := state.UndraftedByPoints
-	if h.useADP {
-		undrafted = state.UndraftedByADP
-	}
-	for _, player := range undrafted {
-		if allowedPos[player.Pos[0]] {
-			r--
-		}
-		if r < 0 {
-			return player, justification
+	for _, want := range h.rankedPlayers {
+		if !state.Drafted[want.PlayerID] && allowedPos[state.Players[want.PlayerID].Pos[0]] {
+			return state.Players[want.PlayerID], fmt.Sprintf("adp = %5.1f, pos = %s, allowed = %s", want.ADP, team.PosString(), h.rules.HumanoidRaw[team.PosString()])
 		}
 	}
-	return undrafted[0], ""
+	return state.UndraftedByPoints[0], ""
 }
 
 type Optimize struct {
 	order      []int
-	strategies []Strategy
+	strategies func() []Strategy
 	rules      *Rules
 	scorer     *Scorer
 	numTrials  int
 }
 
-func NewOptimize(order []int, strategies []Strategy, rules *Rules, scorer *Scorer, numTrials int) *Optimize {
+func NewOptimize(order []int, strategies func() []Strategy, rules *Rules, scorer *Scorer, numTrials int) *Optimize {
 	return &Optimize{order, strategies, rules, scorer, numTrials}
 }
 
@@ -116,12 +106,11 @@ func (o *Optimize) Candidates(state *State) []*Candidate {
 	for _, player := range posLeaders(state.UndraftedByPoints) {
 		score := 0.0
 		for trial := 0; trial < o.numTrials; trial++ {
-			undraftedByPoints := removePlayer(clonePlayers(state.UndraftedByPoints), player.ID)
-			undraftedByADP := removePlayer(clonePlayers(state.UndraftedByADP), player.ID)
-			teams := cloneTeams(state.Teams)
-			teams[i].Add(player, state.Pick, "")
-			RunDraft(&State{teams, undraftedByPoints, undraftedByADP, state.Pick + 1}, o.order, o.strategies)
-			score += o.scorer.Score(teams[i])
+			newState := state.Clone()
+			newState.Update(i, player, "")
+			newState.Pick++
+			RunDraft(newState, o.order, o.strategies())
+			score += o.scorer.Score(newState.Teams[i])
 		}
 		result = append(result, &Candidate{player, score})
 	}
