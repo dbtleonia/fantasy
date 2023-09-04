@@ -106,26 +106,35 @@ func (o *Optimize) Candidates(state *State) []*Candidate {
 	// TODO: Compute from order.
 	nextPick := state.Pick + 12
 
-	var result []*Candidate
+	candidateMap := make(map[int]*Candidate)
 	for _, player := range posLeaders(state.UndraftedByPoints) {
 		if (player.ADP-float64(nextPick))/player.Stddev > 2.0 {
 			continue
 		}
-		score := 0.0
-		for trial := 0; trial < o.numTrials; trial++ {
+		candidateMap[player.ID] = &Candidate{player, 0.0}
+	}
+
+	for trial := 0; trial < o.numTrials; trial++ {
+		strategies := o.strategies()
+		for id, candidate := range candidateMap {
 			newState := state.Clone()
-			newState.Update(i, player, "")
+			newState.Update(i, candidate.Player, "")
 			newState.Pick++
-			RunDraft(newState, o.order, o.strategies())
-			score += o.scorer.Score(newState.Teams[i])
+			RunDraft(newState, o.order, strategies)
+			candidateMap[id].Score += o.scorer.Score(newState.Teams[i])
 		}
-		result = append(result, &Candidate{player, score})
+	}
+
+	var result []*Candidate
+	for _, candidate := range candidateMap {
+		result = append(result, candidate)
 	}
 	sort.Sort(sort.Reverse(ByScore(result)))
 	return result
 }
 
 func (o *Optimize) Select(state *State) (*Player, string) {
+	fmt.Printf("Optimizing pick %d\n", state.Pick)
 	candidates := o.Candidates(state)
 
 	var justification []string
