@@ -42,11 +42,9 @@ func (s *Scorer) Score(team *Team) float64 {
 		}
 		if s.Bench {
 			if bench[ch] < len(benchWeights[ch]) {
-				if ch != 'D' && ch != 'T' {
-					result += player.Points*benchWeights[ch][bench[ch]] + 0.5
-					bench[ch]++
-					continue
-				}
+				result += player.Points*benchWeights[ch][bench[ch]] + 0.5
+				bench[ch]++
+				continue
 			}
 		}
 	}

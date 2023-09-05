@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	numTrials = flag.Int("num_trials", 200, "number of trials to run for optimize")
+	numTrials = flag.Int("num_trials", 1000, "number of trials to run for optimize")
 	seed      = flag.Int64("seed", 0, "seed for rand; if 0 uses time")
 	bench     = flag.Bool("bench", false, "score bench (using hardcoded weights)")
 )

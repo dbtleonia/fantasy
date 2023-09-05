@@ -114,7 +114,10 @@ func (o *Optimize) Candidates(state *State) []*Candidate {
 		candidateMap[player.ID] = &Candidate{player, 0.0}
 	}
 
-	for trial := 0; trial < o.numTrials; trial++ {
+	for trial := 1; trial <= o.numTrials; trial++ {
+		if trial%100 == 0 {
+			fmt.Printf("Trial %4d\n", trial)
+		}
 		strategies := o.strategies()
 		for id, candidate := range candidateMap {
 			newState := state.Clone()
