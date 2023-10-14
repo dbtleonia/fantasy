@@ -2,6 +2,7 @@ package fantasy
 
 import (
 	"fmt"
+	"math/rand"
 	"sort"
 	"strings"
 )
@@ -139,6 +140,11 @@ func (o *Optimize) Candidates(state *State) []*Candidate {
 func (o *Optimize) Select(state *State) (*Player, string) {
 	fmt.Printf("Optimizing pick %d\n", state.Pick)
 	candidates := o.Candidates(state)
+
+	if o.numTrials == 0 {
+		i := rand.Intn(len(candidates))
+		return candidates[i].Player, "random"
+	}
 
 	var justification []string
 	for _, c := range candidates {

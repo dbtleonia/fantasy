@@ -66,6 +66,8 @@ func main() {
 		sort.Slice(rankedPlayers[t], func(i, j int) bool { return rankedPlayers[t][i].ADP < rankedPlayers[t][j].ADP })
 	}
 
+	scorer := &fantasy.Scorer{[]byte(schema), *bench}
+
 	optStrategiesFn := func() []fantasy.Strategy {
 		optRankedPlayers := make([][]fantasy.PlayerADP, numTeams)
 		for t := 0; t < numTeams; t++ {
@@ -88,15 +90,14 @@ func main() {
 			case 'O':
 				// Approximate Optimize with Humanoid.
 				// TODO: Figure out a better approximation.
-				optStrategies[t] = fantasy.NewHumanoid(order, rules, optRankedPlayers[t])
+				// optStrategies[t] = fantasy.NewHumanoid(order, rules, optRankedPlayers[t])
+				optStrategies[t] = fantasy.NewOptimize(order, func() []fantasy.Strategy { return nil }, rules, scorer, 0 /* numTrials */)
 			default:
 				log.Fatalf("Invalid strategy: %c", ch)
 			}
 		}
 		return optStrategies
 	}
-
-	scorer := &fantasy.Scorer{[]byte(schema), *bench}
 
 	strategies := make([]fantasy.Strategy, numTeams)
 	for t := 0; t < numTeams; t++ {
