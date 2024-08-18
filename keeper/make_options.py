@@ -6,18 +6,23 @@ import collections
 import csv
 import email
 import itertools
+import json
 import os
 import re
 import sys
 
-def read_managers(indir):
-    filename = os.path.join(indir, 'managers.csv')
-    print(f'Reading {filename}')
+def read_managers(indir, year):
+    data = read_json(os.path.join(indir, f'managers-{year}.json'))
     result = {}
-    with open(filename) as f:
-        for manager, name in csv.reader(f):
-            result[manager] = name
+    for t in data['fantasy_content']['league']['teams']:
+        manager = t['team']['managers'][0]['manager']
+        result[manager['guid']] = f"{manager['nickname']} - {t['team']['name']}"
     return result
+
+def read_json(filename):
+    print(f'Reading {filename}')
+    with open(filename) as f:
+        return json.load(f)
 
 def read_mhtml(filename):
     print(f'Reading {filename}')
@@ -26,16 +31,18 @@ def read_mhtml(filename):
             if part.get_content_type() == 'text/html':
                 return bs4.BeautifulSoup(part.get_payload(decode=True), features='html.parser')
 
-def read_draft(indir):
+def read_draft(indir, year, url_ids):
     result = {}
-    doc = read_mhtml(os.path.join(indir, 'draftresults.mhtml'))
+    doc = read_mhtml(os.path.join(indir, f'draftresults-{year}.mhtml'))
     draft = doc.find('div', {'id': 'drafttables'})
     for drow in draft.find_all('div', {'class': 'Grid-u'}):
         manager = drow.table.thead.tr.th.get_text()
         for prow in drow.table.tbody.find_all('tr'):
             td = prow.find('td', {'class': 'player'})
             pick = int(prow.find('td', {'class': 'pick'}).get_text().lstrip('(').rstrip(')'))
-            playerid = td.a['href'][29:].rstrip('/')
+            if td.a['href'] not in url_ids:
+                continue
+            playerid = url_ids[td.a['href']]
             result[playerid] = {
                 'round': pick // 12 + 1,
                 'kept': td.span is not None,
@@ -46,54 +53,40 @@ def read_draft(indir):
             }
     return result
 
-def read_dropped(indir):
+def read_dropped(indir, year1, year2, year3):
+    data = read_json(os.path.join(indir, f'drops-{year1}-{year2}-{year3}.json'))
     result = {}
-    for filename in os.listdir(indir):
-        if not re.fullmatch(r'dropped\d+\.mhtml', filename):
-            continue
-        doc = read_mhtml(os.path.join(indir, filename))
-        for div in doc.find_all('div', {'class': 'Pbot-xs'}):
-            playerid = div.a['href'][29:].rstrip('/')
-            player = div.a.get_text()
-            result[playerid] = player
+    for l in data['fantasy_content']['leagues']:
+        season = int(l['league']['season'])
+        result[season] = {}
+        for t in l['league']['transactions']:
+            for p in t['transaction']['players']:
+                if p['player']['transaction_data']['type'] == 'drop':
+                    playerid = p['player']['player_id']
+                    result[season][playerid] = p['player']['name']['full']
     return result
 
-def read_rosters(indir):
+def read_rosters(indir, year):
+    data = read_json(os.path.join(indir, f'rosters-{year}.json'))
     result = []
-    for filename in os.listdir(indir):
-        if not re.fullmatch(r'roster\d+\.mhtml', filename):
-            continue
-        doc = read_mhtml(os.path.join(indir, filename))
-        manager = str(next(doc
-                           .find('div', {'id': 'team-card-info'})
-                           .find('div', {'class': 'Ptop-sm'})
-                           .find('a')
-                           .children)).strip()
-        # manager_url = (doc.find('div', {'id': 'team-card-info'})
-        #                .find('a', string='View Profile')['href'].split('?')[0])
-        player_count = 0
-        for i in range(3):
-            for tr in doc.find('table', {'id': f'statTable{i}'}).find('tbody').find_all('tr'):
-                a = tr.find('a', {'class': 'name'})
-                if a is None:
-                    continue
-                playerid = a['href'][29:].rstrip('/')
-                player = a.get_text()
-                result.append({
-                    'manager': manager,
-                    'playerid': playerid,
-                    'player': player,
-                })
-                player_count += 1
-        if player_count != 16:
-            raise Exception(f'Manager "{manager}" has {player_count} players, want 16')
-    return result
+    url_ids = {}
+    for t in data['fantasy_content']['teams']:
+        manager = t['team']['managers'][0]['manager']
+        for p in t['team']['roster']['players']:
+            result.append({
+                'manager': manager['guid'],
+                'playerid': p['player']['player_id'],
+                'player': f"{p['player']['name']['full']} ({p['player']['display_position']} - {p['player']['editorial_team_abbr']})"
+            })
+            url_ids[p['player']['url']] = p['player']['player_id']
+    return result, url_ids
 
 UNKEEPABLE = 99  # use large value to sort non-keepables last
 
 def compute_keeper_round(playerid, draft_round,
                          kept1, kept2, kept3,
                          dropped1, dropped2, dropped3):
+    # TODO: Fix D check.
     # 'teams' in playerid means defense; exempt from 3-year rule
     if (kept1 and kept2 and kept3 and
         not dropped1 and not dropped2 and not dropped3 and
@@ -124,28 +117,21 @@ def main(args):
     data_dir = args.data or os.path.join(os.getenv('HOME'), 'data')
     yahoo = os.path.join(data_dir, 'yahoo')
 
-    manager_names = read_managers(os.path.join(yahoo, str(args.year-1)))
-    rosters = read_rosters(os.path.join(yahoo, str(args.year-1)))
-    draft = {}
-    dropped = {}
+    # From json files.
+    manager_names = read_managers(yahoo, args.year)      # {guid: name}
+    rosters, url_ids = read_rosters(yahoo, args.year-1)  # [{'manager': guid, 'playerid': id, 'player': name}], {url: id}
+    dropped = read_dropped(yahoo, args.year-1, args.year-2, args.year-3)  # {season: {id: name}}
+
+    # From mhtml files because json is buggy.
+    draft = {}  # {season: {id: {'round': <int>, 'kept': <bool>}}}
     for y in range(args.year-1, args.year-4, -1):
-        draft[y] = read_draft(os.path.join(yahoo, str(y)))
-        dropped[y] = read_dropped(os.path.join(yahoo, str(y)))
+        draft[y] = read_draft(yahoo, y, url_ids)
 
     result = []
     for p in rosters:
         manager_name = manager_names[p['manager']]
         playerid = p['playerid']
-        if playerid == 'teams/la-chargers':
-            player = 'Los Angeles Chargers'
-        elif playerid == 'teams/la-rams':
-            player = 'Los Angeles Rams'
-        elif playerid == 'teams/ny-giants':
-            player = 'New York Giants'
-        elif playerid == 'teams/ny-jets':
-            player = 'New York Jets'
-        else:
-            player = p['player']
+        player = p['player']
         draft_round = draft[args.year-1][playerid]['round'] if playerid in draft[args.year-1] else None
         kept1 = playerid in draft[args.year-1] and draft[args.year-1][playerid]['kept']
         kept2 = playerid in draft[args.year-2] and draft[args.year-2][playerid]['kept']
@@ -179,9 +165,11 @@ def main(args):
 
     result.sort()
 
-    d = os.path.join(data_dir, 'out', str(args.year))
+    d = os.path.join(data_dir, 'out')
     os.makedirs(d, exist_ok=True)
-    admin_csv = csv.writer(open(os.path.join(d, 'keeper_options.csv'), 'w'))
+    filename = os.path.join(d, f'keeper-options-{args.year}.csv')
+    print(f'Writing {filename}')
+    admin_csv = csv.writer(open(filename, 'w'))
     admin_csv.writerow([
         'Manager',
         'Player',
