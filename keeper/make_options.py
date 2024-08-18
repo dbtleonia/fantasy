@@ -76,21 +76,20 @@ def read_rosters(indir, year):
             result.append({
                 'manager': manager['guid'],
                 'playerid': p['player']['player_id'],
-                'player': f"{p['player']['name']['full']} ({p['player']['display_position']} - {p['player']['editorial_team_abbr']})"
+                'player': f"{p['player']['name']['full']} ({p['player']['display_position']} - {p['player']['editorial_team_abbr']})",
+                'position': p['player']['primary_position']
             })
             url_ids[p['player']['url']] = p['player']['player_id']
     return result, url_ids
 
 UNKEEPABLE = 99  # use large value to sort non-keepables last
 
-def compute_keeper_round(playerid, draft_round,
+def compute_keeper_round(playerid, position, draft_round,
                          kept1, kept2, kept3,
                          dropped1, dropped2, dropped3):
-    # TODO: Fix D check.
-    # 'teams' in playerid means defense; exempt from 3-year rule
     if (kept1 and kept2 and kept3 and
         not dropped1 and not dropped2 and not dropped3 and
-        not 'teams' in playerid):
+        position != 'DEF'):
         return (UNKEEPABLE, 'kept 3 years non-D')
     if draft_round is None:
         if dropped1:
@@ -119,7 +118,7 @@ def main(args):
 
     # From json files.
     manager_names = read_managers(yahoo, args.year)      # {guid: name}
-    rosters, url_ids = read_rosters(yahoo, args.year-1)  # [{'manager': guid, 'playerid': id, 'player': name}], {url: id}
+    rosters, url_ids = read_rosters(yahoo, args.year-1)  # [{'manager': guid, 'playerid': id, 'player': name, 'position': pos}], {url: id}
     dropped = read_dropped(yahoo, args.year-1, args.year-2, args.year-3)  # {season: {id: name}}
 
     # From mhtml files because json is buggy.
@@ -132,6 +131,7 @@ def main(args):
         manager_name = manager_names[p['manager']]
         playerid = p['playerid']
         player = p['player']
+        position = p['position']
         draft_round = draft[args.year-1][playerid]['round'] if playerid in draft[args.year-1] else None
         kept1 = playerid in draft[args.year-1] and draft[args.year-1][playerid]['kept']
         kept2 = playerid in draft[args.year-2] and draft[args.year-2][playerid]['kept']
@@ -140,7 +140,7 @@ def main(args):
         dropped2 = playerid in dropped[args.year-2]
         dropped3 = playerid in dropped[args.year-3]
         keeper_round, reason = compute_keeper_round(
-            playerid, draft_round,
+            playerid, position, draft_round,
             kept1, kept2, kept3,
             dropped1, dropped2, dropped3)
 
