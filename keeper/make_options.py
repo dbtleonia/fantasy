@@ -76,7 +76,7 @@ def read_rosters(indir, year):
             result.append({
                 'manager': manager['guid'],
                 'playerid': p['player']['player_id'],
-                'player': f"{p['player']['name']['full']} ({p['player']['display_position']} - {p['player']['editorial_team_abbr']})",
+                'player': f"{p['player']['name']['full']} ({p['player']['editorial_team_abbr']} - {p['player']['display_position']})",
                 'position': p['player']['primary_position']
             })
             url_ids[p['player']['url']] = p['player']['player_id']
@@ -167,7 +167,7 @@ def main(args):
 
     d = os.path.join(data_dir, 'out')
     os.makedirs(d, exist_ok=True)
-    filename = os.path.join(d, f'keeper-options-{args.year}.csv')
+    filename = os.path.join(d, f'keeper-options.csv')
     print(f'Writing {filename}')
     admin_csv = csv.writer(open(filename, 'w'))
     admin_csv.writerow([

@@ -21,11 +21,6 @@ func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	if flag.NArg() != 1 {
-		log.Fatal("year please")
-	}
-	year := flag.Arg(0)
-
 	dir := *dataDir
 	if dir == "" {
 		if home := os.Getenv("HOME"); home != "" {
@@ -33,7 +28,7 @@ func main() {
 		}
 	}
 
-	consts, err := keeper.ReadConstants(path.Join(dir, "out", year), false)
+	consts, err := keeper.ReadConstants(dir, false)
 	if err != nil {
 		log.Fatal(err)
 	}

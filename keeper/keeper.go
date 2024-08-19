@@ -271,7 +271,7 @@ func rosters(c *Constants, actions []Action) [][]GridderID {
 }
 
 func ReadConstants(dataDir string, reveal bool) (*Constants, error) {
-	g, err := os.Open(path.Join(dataDir, "player_values.csv"))
+	g, err := os.Open(path.Join(dataDir, "out", "player-values.csv"))
 	if err != nil {
 		return nil, err
 	}
@@ -298,7 +298,7 @@ func ReadConstants(dataDir string, reveal bool) (*Constants, error) {
 		})
 	}
 
-	k, err := os.Open(path.Join(dataDir, "keeper_options.csv"))
+	k, err := os.Open(path.Join(dataDir, "out", "keeper-options.csv"))
 	if err != nil {
 		return nil, err
 	}
@@ -337,7 +337,7 @@ func ReadConstants(dataDir string, reveal bool) (*Constants, error) {
 		gridders[gid].Round = round
 	}
 
-	o, err := os.Open(path.Join(dataDir, "draft_order.csv"))
+	o, err := os.Open(path.Join(dataDir, "yahoo", "draft-order.csv"))
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +375,7 @@ func ReadConstants(dataDir string, reveal bool) (*Constants, error) {
 	ideal := make([]Action, len(mids))
 	actual := make([]Action, len(mids))
 	if reveal {
-		id, err := os.Open(path.Join(dataDir, "keeper_ideal.csv"))
+		id, err := os.Open(path.Join(dataDir, "out", "keeper-ideal.csv"))
 		if err != nil {
 			return nil, err
 		}
@@ -410,7 +410,7 @@ func ReadConstants(dataDir string, reveal bool) (*Constants, error) {
 			ideal[mid] = append(ideal[mid], &Keep{pick - 1, gid})
 		}
 
-		a, err := os.Open(path.Join(dataDir, "keeper_selections.csv"))
+		a, err := os.Open(path.Join(dataDir, "out", "keeper-selections.csv"))
 		if err != nil {
 			return nil, err
 		}
