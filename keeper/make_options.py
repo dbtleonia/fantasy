@@ -70,9 +70,9 @@ def read_rosters(indir, year):
     data = read_json(os.path.join(indir, f'rosters-{year}.json'))
     result = []
     url_ids = {}
-    for t in data['fantasy_content']['teams']:
+    for t in data['fantasy_content']['league']['teams']:
         manager = t['team']['managers'][0]['manager']
-        for p in t['team']['roster']['players']:
+        for p in t['team']['players']:
             result.append({
                 'manager': manager['guid'],
                 'playerid': p['player']['player_id'],
