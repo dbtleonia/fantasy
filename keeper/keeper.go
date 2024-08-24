@@ -410,7 +410,7 @@ func ReadConstants(dataDir string, reveal bool) (*Constants, error) {
 			ideal[mid] = append(ideal[mid], &Keep{pick - 1, gid})
 		}
 
-		a, err := os.Open(path.Join(dataDir, "out", "keeper-selections.csv"))
+		a, err := os.Open(path.Join(dataDir, "managers", "keeper-selections.csv"))
 		if err != nil {
 			return nil, err
 		}

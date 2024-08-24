@@ -58,11 +58,6 @@ func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	if flag.NArg() != 1 {
-		log.Fatal("year please")
-	}
-	year := flag.Arg(0)
-
 	dir := *dataDir
 	if dir == "" {
 		if home := os.Getenv("HOME"); home != "" {
@@ -70,7 +65,7 @@ func main() {
 		}
 	}
 
-	consts, err := keeper.ReadConstants(path.Join(dir, "out", year), true)
+	consts, err := keeper.ReadConstants(dir, true)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -131,15 +126,15 @@ func main() {
 			gid := keeper.GridderID(g)
 			if consts.Gridders[gid].Round == 0 {
 				// Gridder was round 1 keeper last year; not eligible this year.
-				fmt.Printf("%30s n/a\n",
+				fmt.Printf("%32s n/a\n",
 					consts.Gridders[gid].Name)
 			} else if len(consts.Gridders[gid].Picks) == 0 {
 				// Gridder can't be kept because manager has no pick that round or earlier.
-				fmt.Printf("%30s R%2d  n/a\n",
+				fmt.Printf("%32s R%2d  n/a\n",
 					consts.Gridders[gid].Name,
 					consts.Gridders[gid].Round)
 			} else {
-				fmt.Printf("%30s R%2d %4d %s %s\n",
+				fmt.Printf("%32s R%2d %4d %s %s\n",
 					consts.Gridders[gid].Name,
 					consts.Gridders[gid].Round,
 					int(gridderDiffs[gid]),
@@ -172,13 +167,20 @@ func main() {
 		return utilsActual[ranksActual[i]] > utilsActual[ranksActual[j]]
 	})
 
-	fmt.Printf("%4s %15s %15s %15s\n", "rank", "start", "ideal", "actual")
-	fmt.Printf("%4s %15s %15s %15s\n", "====", "=====", "=====", "======")
+	fmt.Printf("%4s   %-15s   %-15s   %-15s\n", "rank", "start", "ideal", "actual")
+	fmt.Printf("%4s   %-15s   %-15s   %-15s\n", "====", "=====", "=====", "======")
 	for i := 0; i < len(consts.Managers); i++ {
-		fmt.Printf("%4s %15s %15s %15s\n",
+		fmt.Printf("%4s   %-15s   %-15s   %-15s\n",
 			ord(i+1),
-			consts.Managers[ranksStart[i]].Name,
-			consts.Managers[ranksIdeal[i]].Name,
-			consts.Managers[ranksActual[i]].Name)
+			truncate(consts.Managers[ranksStart[i]].Name, 15),
+			truncate(consts.Managers[ranksIdeal[i]].Name, 15),
+			truncate(consts.Managers[ranksActual[i]].Name, 15))
 	}
+}
+
+func truncate(s string, n int) string {
+	if len(s) > n {
+		return s[:n]
+	}
+	return s
 }

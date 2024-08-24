@@ -47,10 +47,10 @@ func main() {
 			continue
 		}
 		managerName := consts.Managers[gridder.MID].Name
-		if len(managerName) > 20 {
-			managerName = managerName[:20]
-		}
 		if !*ideal {
+			if len(managerName) > 20 {
+				managerName = managerName[:20]
+			}
 			fmt.Printf("%-20s %35s (%6.1f) @ %2d ", managerName, gridder.Name, gridder.Value, gridder.Round)
 		}
 		for i, profile := range profiles {
