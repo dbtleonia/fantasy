@@ -58,7 +58,7 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			keeperPicks[record[1]] = pick
+			keeperPicks[strings.ToUpper(record[1])] = pick
 		}
 	}
 
@@ -102,7 +102,13 @@ func main() {
 		}
 	}
 
-	files, err := os.ReadDir(flag.Arg(0))
+	projectionsRenames := make(map[string]string)
+	for _, record := range mustReadAll(path.Join(flag.Arg(0), "projections-renames.csv")) {
+		projectionsRenames[record[0]] = record[1]
+	}
+
+	projectionsDir := path.Join(flag.Arg(0), "projections")
+	files, err := os.ReadDir(projectionsDir)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -111,7 +117,7 @@ func main() {
 	players := make(map[string][]string)
 	var problems []string
 	for _, file := range files {
-		f, err := os.Open(path.Join(flag.Arg(0), file.Name()))
+		f, err := os.Open(path.Join(projectionsDir, file.Name()))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -125,6 +131,7 @@ func main() {
 
 		const (
 			colName = 0
+			colTeam = 1
 		)
 		colPoints := len(records[0]) - 1
 		for _, record := range records[1:] {
@@ -161,9 +168,18 @@ func main() {
 				problems = append(problems, file.Name())
 			}
 
-			keeperPick, ok := keeperPicks[record[colName]]
+			n := record[colName]
+			if r, ok := projectionsRenames[n]; ok {
+				n = r
+			}
+			t := record[colTeam]
+			if t == "JAC" {
+				t = "JAX"
+			}
+			k := strings.ToUpper(fmt.Sprintf("%s (%s - %s)", n, t, pos))
+			keeperPick, ok := keeperPicks[k]
 			if ok {
-				delete(keeperPicks, record[colName])
+				delete(keeperPicks, k)
 			}
 
 			pADP, ok := playerADP[record[colName]]
