@@ -105,13 +105,13 @@ func (o *Optimize) Candidates(state *State) []*Candidate {
 	i := o.order[state.Pick]
 
 	// TODO: Compute from order.
-	nextPick := state.Pick + 12
+	// nextPick := state.Pick + 12
 
 	candidateMap := make(map[int]*Candidate)
 	for _, player := range posLeaders(state.UndraftedByPoints) {
-		if (player.ADP-float64(nextPick))/player.Stddev > 2.0 {
-			continue
-		}
+		// if (player.ADP-float64(nextPick))/player.Stddev > 2.0 {
+		// 	 continue
+		// }
 		candidateMap[player.ID] = &Candidate{player, 0.0}
 	}
 
